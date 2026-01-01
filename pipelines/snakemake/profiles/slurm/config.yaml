@@ -1,0 +1,26 @@
+# Snakemake SLURM Profile
+#
+# Usage: snakemake --profile profiles/slurm
+
+# Cluster submission
+cluster: "sbatch --account={resources.account} --partition={resources.partition} --cpus-per-task={threads} --mem={resources.mem_mb}M --time={resources.time} --job-name={rule} --output=logs/{rule}_%j.out --error=logs/{rule}_%j.err"
+
+# Default resources
+default-resources:
+  - account=default_account
+  - partition=normal
+  - mem_mb=4000
+  - time="01:00:00"
+
+# Job handling
+jobs: 100                     # Max concurrent jobs
+latency-wait: 60              # Wait for files after job completion
+restart-times: 3              # Retry failed jobs
+max-jobs-per-second: 10       # Rate limiting
+
+# Keep going on errors
+keep-going: true
+
+# Use conda environments if available
+use-conda: true
+

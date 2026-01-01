@@ -1,0 +1,187 @@
+"""
+eveHap - mtDNA Haplogroup Classification Pipeline (Snakemake)
+
+Example Snakemake workflow for batch haplogroup classification.
+Designed for HPC and cloud environments.
+
+Usage:
+    snakemake --cores 4 --config input_dir=samples/ tree=rsrs reference=rcrs
+    snakemake --cores 4 --config tree=/path/to/tree.json reference=/path/to/ref.fasta
+"""
+
+import os
+import sys
+from pathlib import Path
+
+# Configuration with defaults
+configfile: "config.yaml"
+
+INPUT_DIR = config.get("input_dir", "samples")
+OUTDIR = config.get("outdir", "results")
+TREE = config.get("tree")
+REFERENCE = config.get("reference")
+METHOD = config.get("method", "auto")
+DAMAGE_FILTER = config.get("damage_filter", False)
+
+# Validate required parameters
+if not TREE:
+    print("""
+════════════════════════════════════════════════════════════════════
+ERROR: 'tree' configuration is required
+
+Options:
+  tree: rsrs              # Use bundled RSRS tree (~5400 haplogroups)
+  tree: rcrs              # Use bundled rCRS tree (~2400 haplogroups)
+  tree: /path/to/tree.json   # Use custom tree file
+
+Example:
+  snakemake --cores 4 --config tree=rsrs reference=rcrs input_dir=samples/
+
+To download the mitoLeaf tree (6400+ haplogroups):
+  evehap download --outdir ./evehap_data/
+════════════════════════════════════════════════════════════════════
+""", file=sys.stderr)
+    sys.exit(1)
+
+if not REFERENCE:
+    print("""
+════════════════════════════════════════════════════════════════════
+ERROR: 'reference' configuration is required
+
+Options:
+  reference: rcrs         # Use bundled rCRS reference
+  reference: /path/to/reference.fasta   # Use custom reference
+
+Example:
+  snakemake --cores 4 --config tree=rsrs reference=rcrs input_dir=samples/
+════════════════════════════════════════════════════════════════════
+""", file=sys.stderr)
+    sys.exit(1)
+
+# Discover input files
+INPUT_EXTENSIONS = [".bam", ".cram", ".vcf", ".vcf.gz", ".fasta", ".fa"]
+SAMPLES = {}
+
+for ext in INPUT_EXTENSIONS:
+    for f in Path(INPUT_DIR).glob(f"*{ext}"):
+        sample_id = f.stem
+        # Remove common suffixes
+        for suffix in [".chrM", ".chrMT", ".MT", ".vcf"]:
+            sample_id = sample_id.replace(suffix, "")
+        SAMPLES[sample_id] = str(f)
+
+if not SAMPLES:
+    print(f"""
+════════════════════════════════════════════════════════════════════
+ERROR: No input files found in {INPUT_DIR}
+
+Supported formats: {', '.join(INPUT_EXTENSIONS)}
+
+Example:
+  snakemake --cores 4 --config input_dir=/path/to/samples tree=rsrs reference=rcrs
+════════════════════════════════════════════════════════════════════
+""", file=sys.stderr)
+    sys.exit(1)
+
+print(f"Found {len(SAMPLES)} samples: {list(SAMPLES.keys())[:5]}...")
+print(f"Using tree: {TREE}")
+print(f"Using reference: {REFERENCE}")
+
+
+# Build evehap options
+def get_evehap_opts(wildcards=None, extra=""):
+    opts = [
+        f"--tree {TREE}",
+        f"--reference {REFERENCE}",
+        f"--method {METHOD}",
+    ]
+    if DAMAGE_FILTER:
+        opts.append("--damage-filter")
+    opts.append("-q")
+    if extra:
+        opts.append(extra)
+    return " ".join(opts)
+
+
+# Target rule
+rule all:
+    input:
+        expand(f"{OUTDIR}/{{sample}}.haplogroup.tsv", sample=SAMPLES.keys()),
+        f"{OUTDIR}/all_haplogroups.tsv",
+        f"{OUTDIR}/summary.txt"
+
+
+# Classify haplogroups
+rule classify:
+    input:
+        lambda wildcards: SAMPLES[wildcards.sample]
+    output:
+        tsv = f"{OUTDIR}/{{sample}}.haplogroup.tsv",
+        json = f"{OUTDIR}/{{sample}}.haplogroup.json"
+    params:
+        opts = get_evehap_opts()
+    log:
+        f"{OUTDIR}/logs/{{sample}}.classify.log"
+    shell:
+        """
+        evehap classify {input} {params.opts} --output-format tsv -o {output.tsv} 2> {log}
+        evehap classify {input} {params.opts} --output-format json -o {output.json} 2>> {log}
+        """
+
+
+# Damage analysis (BAM files only)
+rule damage:
+    input:
+        lambda wildcards: SAMPLES[wildcards.sample]
+    output:
+        f"{OUTDIR}/damage/{{sample}}.damage.txt"
+    log:
+        f"{OUTDIR}/logs/{{sample}}.damage.log"
+    shell:
+        """
+        evehap damage {input} > {output} 2> {log}
+        """
+
+
+# Merge all results
+rule merge_results:
+    input:
+        expand(f"{OUTDIR}/{{sample}}.haplogroup.tsv", sample=SAMPLES.keys())
+    output:
+        f"{OUTDIR}/all_haplogroups.tsv"
+    shell:
+        """
+        head -1 {input[0]} > {output}
+        for f in {input}; do
+            tail -n +2 "$f" >> {output}
+        done
+        """
+
+
+# Summary statistics
+rule summary:
+    input:
+        f"{OUTDIR}/all_haplogroups.tsv"
+    output:
+        f"{OUTDIR}/summary.txt"
+    shell:
+        """
+        echo "=== eveHap Classification Summary ===" > {output}
+        echo "" >> {output}
+        echo "Total samples: $(tail -n +2 {input} | wc -l)" >> {output}
+        echo "" >> {output}
+        echo "Haplogroup distribution:" >> {output}
+        cut -f2 {input} | tail -n +2 | sort | uniq -c | sort -rn | head -20 >> {output}
+        echo "" >> {output}
+        echo "Quality distribution:" >> {output}
+        cut -f4 {input} | tail -n +2 | sort | uniq -c | sort -rn >> {output}
+        """
+
+
+# Optional: Run damage analysis for BAM files
+BAM_SAMPLES = {k: v for k, v in SAMPLES.items() if v.endswith((".bam", ".cram"))}
+
+if BAM_SAMPLES:
+    rule all_damage:
+        input:
+            expand(f"{OUTDIR}/damage/{{sample}}.damage.txt", sample=BAM_SAMPLES.keys())

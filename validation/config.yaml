@@ -1,0 +1,117 @@
+# eveHap Validation Configuration
+# ================================
+# Configure datasets for validation testing
+
+# Global settings
+settings:
+  # Number of parallel workers (0 = auto-detect CPU count)
+  workers: 0
+
+  # Random seed for reproducible subsampling (null = no randomization)
+  random_seed: 42
+
+  # Output directory for validation results
+  output_dir: validation_results
+
+  # Haplogrep3 configuration
+  haplogrep3:
+    # Path to haplogrep3 JAR or command
+    command: haplogrep3
+    # Tree to use for Haplogrep3 (phylotree17-rsrs or phylotree17-rcrs)
+    tree: phylotree17-rsrs
+    # Additional arguments
+    extra_args: []
+
+# eveHap configuration
+evehap:
+  # Path to phylotree (relative to evehap root or absolute)
+  tree: data/phylotree/tree-rsrs.xml
+  # Path to reference (relative to evehap root or absolute)
+  reference: data/reference/rCRS.fasta
+  # Classification method: kulczynski or traversal
+  method: auto
+
+# Validation datasets
+datasets:
+  # 1000 Genomes - high quality VCF data
+  1kg:
+    enabled: true
+    type: vcf
+    description: "1000 Genomes mtDNA variants"
+    # Path to VCF file
+    vcf: /home/a/mtdna_poc/data/raw/1kg_chrMT.vcf.gz
+    # Path to ground truth CSV (columns: SampleID, Haplogroup)
+    ground_truth: /home/a/mtdna_poc/data/haplogroups/1kg_haplogroups_simple.csv
+    # Sample ID column in ground truth
+    sample_column: SampleID
+    # Haplogroup column in ground truth
+    haplogroup_column: Haplogroup
+    # Maximum samples to test (null = all)
+    max_samples: null
+    # Minimum expected accuracy (for pass/fail)
+    min_accuracy: 0.95
+
+  # HGDP - high coverage BAM files
+  hgdp:
+    enabled: true
+    type: bam
+    description: "Human Genome Diversity Project mtDNA"
+    # Path to BAM directory
+    bam_dir: /home/a/mtdna_poc/data/hgdp/bams
+    # Path to ground truth CSV
+    ground_truth: /home/a/mtdna_poc/data/hgdp/haplogroups/haplogroups.csv
+    sample_column: sample_id
+    haplogroup_column: haplogroup
+    # File pattern for BAMs (sample ID extracted from filename)
+    file_pattern: "*.bam"
+    # Regex to extract sample ID from filename
+    sample_regex: "^([^.]+)"
+    max_samples: null
+    min_accuracy: 0.90
+
+  # AADR - ancient DNA with damage
+  aadr:
+    enabled: false  # No ground truth currently matched
+    type: bam
+    description: "Allen Ancient DNA Resource"
+    bam_dir: /home/a/mtdna_poc/data/aadr_bams
+    ground_truth: null  # No matched ground truth
+    file_pattern: "*.bam"
+    sample_regex: "^([^.]+)"
+    # Use damage filter for ancient DNA
+    damage_filter: true
+    max_samples: null
+    min_accuracy: 0.80
+
+  # 23andMe - real consumer genotyping files
+  23andme:
+    enabled: true
+    type: microarray
+    description: "Real 23andMe consumer genotyping files"
+    microarray_dir: /home/a/mtdna_poc/data/23andme
+    # No ground truth - compare against Haplogrep3 instead
+    ground_truth: null
+    file_pattern: "*.txt"
+    max_samples: null
+    min_accuracy: null
+
+  # gnomAD - population-scale VCF
+  gnomad:
+    enabled: false
+    type: vcf
+    description: "gnomAD mtDNA variants"
+    vcf: /path/to/gnomad.chrM.vcf.gz
+    ground_truth: null  # No ground truth
+    max_samples: 1000
+    min_accuracy: null
+
+# Accuracy thresholds
+thresholds:
+  # Exact haplogroup match (after normalization)
+  exact_match: 0.80
+  # Major clade match (first letter(s) before digits)
+  clade_match: 0.95
+  # Sub-clade match (first two levels)
+  subclade_match: 0.90
+
+

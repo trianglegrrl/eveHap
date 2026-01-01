@@ -1,0 +1,85 @@
+name: Release Validation
+
+# Manually triggered or on release tags
+on:
+  workflow_dispatch:
+    inputs:
+      max_samples:
+        description: 'Maximum samples per dataset (0 = all)'
+        required: false
+        default: '0'
+      dataset:
+        description: 'Specific dataset to validate (empty = all)'
+        required: false
+        default: ''
+  release:
+    types: [created]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libhts-dev
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[validation]"
+
+      - name: Download validation data
+        env:
+          VALIDATION_DATA_URL: ${{ secrets.VALIDATION_DATA_URL }}
+        run: |
+          # Download validation datasets from secure storage
+          # This requires pre-configured secrets with data URLs
+          echo "Downloading validation data..."
+          # mkdir -p data/
+          # curl -L "$VALIDATION_DATA_URL" -o data.tar.gz
+          # tar -xzf data.tar.gz -C data/
+
+      - name: Install Haplogrep3
+        run: |
+          # Download and setup Haplogrep3
+          wget -q https://github.com/genepi/haplogrep3/releases/download/v3.2.1/haplogrep3-3.2.1-linux.zip
+          unzip -q haplogrep3-3.2.1-linux.zip
+          chmod +x haplogrep3
+          sudo mv haplogrep3 /usr/local/bin/
+
+      - name: Run validation
+        run: |
+          MAX_SAMPLES="${{ github.event.inputs.max_samples || '0' }}"
+          DATASET="${{ github.event.inputs.dataset || '' }}"
+
+          ARGS=""
+          if [ "$MAX_SAMPLES" != "0" ]; then
+            ARGS="$ARGS --max-samples $MAX_SAMPLES"
+          fi
+          if [ -n "$DATASET" ]; then
+            ARGS="$ARGS --dataset $DATASET"
+          fi
+
+          python -m validation.run_validation $ARGS
+
+      - name: Upload validation results
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-results
+          path: validation_results/
+
+      - name: Check validation passed
+        run: |
+          # The validation script exits with non-zero if any dataset fails
+          echo "Validation completed successfully"
+

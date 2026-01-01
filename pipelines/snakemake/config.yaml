@@ -1,0 +1,52 @@
+# eveHap Snakemake Configuration
+#
+# Copy this file and modify for your analysis.
+# IMPORTANT: 'tree' and 'reference' are REQUIRED!
+
+# Input/Output
+input_dir: "samples"          # Directory containing input files
+outdir: "results"             # Output directory
+
+# REQUIRED: Phylotree
+# Options:
+#   rsrs - Bundled RSRS tree (~5400 haplogroups, offline-ready)
+#   rcrs - Bundled rCRS tree (~2400 haplogroups, offline-ready)
+#   /path/to/tree.json - Custom tree file
+tree: null    # <-- CHANGE THIS! e.g., "rsrs" or "/path/to/mitoleaf_tree.json"
+
+# REQUIRED: Reference FASTA
+# Options:
+#   rcrs - Bundled rCRS reference (offline-ready)
+#   /path/to/reference.fasta - Custom reference
+reference: null    # <-- CHANGE THIS! e.g., "rcrs" or "/path/to/rCRS.fasta"
+
+# Classification options
+method: "auto"                # Method: 'auto', 'kulczynski', 'traversal'
+damage_filter: false          # Enable ancient DNA damage filtering
+
+
+# ============================================================================
+# Example configurations
+# ============================================================================
+
+# Modern DNA with bundled resources (simplest, offline-ready):
+# ------------------------------------------------------------
+# tree: rsrs
+# reference: rcrs
+# method: auto
+# damage_filter: false
+
+# Ancient DNA with damage filtering:
+# ----------------------------------
+# tree: rsrs
+# reference: rcrs
+# method: traversal
+# damage_filter: true
+
+# Using downloaded mitoLeaf tree (most comprehensive):
+# ---------------------------------------------------
+# First run: evehap download --outdir ./evehap_data/
+# tree: ./evehap_data/mitoleaf_tree.json
+# reference: ./evehap_data/rCRS.fasta
+# method: auto
+# damage_filter: false
