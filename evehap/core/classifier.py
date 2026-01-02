@@ -757,6 +757,9 @@ class Classifier:
         result.haplogroup = best_hg
         result.confidence = best_score
 
+        # Apply coverage-based confidence adjustment
+        result.confidence = self._adjust_confidence_for_coverage(result.confidence, result.coverage_fraction)
+
         # Alternative haplogroups
         result.alternative_haplogroups = scores[1:5]
 
@@ -809,6 +812,9 @@ class Classifier:
         result.haplogroup = traversal.haplogroup
         result.confidence = traversal.confidence
 
+        # Apply coverage-based confidence adjustment
+        result.confidence = self._adjust_confidence_for_coverage(result.confidence, result.coverage_fraction)
+
         # Get expected mutations
         node = self.phylotree.get_haplogroup(traversal.haplogroup)
         if node:
@@ -838,6 +844,31 @@ class Classifier:
             result.warnings.append("MISSING_KEY_MUTATIONS")
 
         return result
+
+    def _adjust_confidence_for_coverage(self, confidence: float, coverage_fraction: float) -> float:
+        """Adjust confidence score based on coverage fraction.
+
+        Low coverage reduces confidence to reflect uncertainty.
+
+        Args:
+            confidence: Original confidence score (0.0-1.0)
+            coverage_fraction: Coverage fraction (0.0-1.0)
+
+        Returns:
+            Adjusted confidence score
+        """
+        if coverage_fraction >= 0.50:
+            # High coverage: no adjustment
+            return confidence
+        elif coverage_fraction >= 0.25:
+            # Medium coverage: reduce by 30%
+            return confidence * 0.7
+        elif coverage_fraction >= 0.10:
+            # Low coverage: reduce by 50%
+            return confidence * 0.5
+        else:
+            # Very low coverage: reduce by 70%
+            return confidence * 0.3
 
     def _add_warnings(self, result: HaplogroupResult, profile: AlleleProfile) -> None:
         """Add QC warnings to result.

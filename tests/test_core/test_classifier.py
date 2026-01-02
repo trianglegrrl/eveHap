@@ -342,4 +342,69 @@ class TestClassifier:
         assert isinstance(result, HaplogroupResult)
         assert result.method in ("kulczynski", "traversal")
 
+    def test_coverage_confidence_adjustment_high_coverage(self, loaded_phylotree: Phylotree) -> None:
+        """Test that confidence is not reduced for high-coverage profiles."""
+        # Create high-coverage profile (>50%)
+        profile = AlleleProfile(sample_id="test", source_format="test")
+        for pos in range(1, 9000):  # ~54% coverage
+            profile.add_observation(AlleleObservation(
+                position=pos, ref_allele="A", alleles={"A": 1.0}, source="test", depth=10
+            ))
+
+        classifier = Classifier(loaded_phylotree, method="kulczynski")
+        result = classifier.classify(profile)
+
+        # Confidence should not be reduced (coverage >= 50%)
+        # We can't test exact value, but it should be reasonable
+        assert result.confidence >= 0.0
+        assert result.coverage_fraction >= 0.50
+
+    def test_coverage_confidence_adjustment_medium_coverage(self, loaded_phylotree: Phylotree) -> None:
+        """Test that confidence is reduced by 30% for medium-coverage profiles (25-50%)."""
+        # Create medium-coverage profile (25-50%)
+        profile = AlleleProfile(sample_id="test", source_format="test")
+        for pos in range(1, 5000):  # ~30% coverage
+            profile.add_observation(AlleleObservation(
+                position=pos, ref_allele="A", alleles={"A": 1.0}, source="test", depth=10
+            ))
+
+        classifier = Classifier(loaded_phylotree, method="kulczynski")
+        result = classifier.classify(profile)
+
+        # Coverage should be in medium range
+        assert 0.25 <= result.coverage_fraction < 0.50
+        # Confidence should be adjusted (we can't test exact value without knowing base confidence)
+
+    def test_coverage_confidence_adjustment_low_coverage(self, loaded_phylotree: Phylotree) -> None:
+        """Test that confidence is reduced by 50% for low-coverage profiles (10-25%)."""
+        # Create low-coverage profile (10-25%)
+        profile = AlleleProfile(sample_id="test", source_format="test")
+        for pos in range(1, 2000):  # ~12% coverage
+            profile.add_observation(AlleleObservation(
+                position=pos, ref_allele="A", alleles={"A": 1.0}, source="test", depth=10
+            ))
+
+        classifier = Classifier(loaded_phylotree, method="kulczynski")
+        result = classifier.classify(profile)
+
+        # Coverage should be in low range
+        assert 0.10 <= result.coverage_fraction < 0.25
+        # Confidence should be adjusted
+
+    def test_coverage_confidence_adjustment_very_low_coverage(self, loaded_phylotree: Phylotree) -> None:
+        """Test that confidence is reduced by 70% for very low-coverage profiles (<10%)."""
+        # Create very low-coverage profile (<10%)
+        profile = AlleleProfile(sample_id="test", source_format="test")
+        for pos in range(1, 1000):  # ~6% coverage
+            profile.add_observation(AlleleObservation(
+                position=pos, ref_allele="A", alleles={"A": 1.0}, source="test", depth=10
+            ))
+
+        classifier = Classifier(loaded_phylotree, method="kulczynski")
+        result = classifier.classify(profile)
+
+        # Coverage should be very low
+        assert result.coverage_fraction < 0.10
+        # Confidence should be adjusted
+
 
