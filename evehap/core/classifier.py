@@ -769,6 +769,9 @@ class Classifier:
             expected_mutations = node.get_all_expected_mutations()
             result.expected_mutations = expected_mutations
 
+            # Build set of expected positions and their derived alleles
+            expected_positions = {m.position: m.derived for m in expected_mutations}
+
             # Categorize mutations
             for mutation in expected_mutations:
                 match_result = mutation.matches(profile)
@@ -776,6 +779,27 @@ class Classifier:
                     result.found_mutations.append(mutation)
                 elif match_result is False:
                     result.missing_mutations.append(mutation)
+
+            # Find extra/private mutations (in sample but not expected)
+            for pos, ref, alt in profile.get_variants():
+                if pos not in expected_positions:
+                    # Variant at unexpected position = private mutation
+                    from .phylotree import Mutation
+                    result.extra_mutations.append(Mutation(
+                        position=pos,
+                        ancestral=ref,
+                        derived=alt,
+                        weight=1.0,
+                    ))
+                elif expected_positions[pos] != alt:
+                    # Different allele than expected = also private
+                    from .phylotree import Mutation
+                    result.extra_mutations.append(Mutation(
+                        position=pos,
+                        ancestral=ref,
+                        derived=alt,
+                        weight=1.0,
+                    ))
 
         # Determine quality
         if best_score >= 0.9:
