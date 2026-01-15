@@ -3,11 +3,12 @@
 Stub module - to be implemented.
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional
 
 from evehap.adapters.base import InputAdapter
 
 if TYPE_CHECKING:
+    from evehap.core.damage import DamageFilter
     from evehap.core.profile import AlleleProfile
 
 
@@ -33,16 +34,21 @@ class FASTQAdapter(InputAdapter):
         """Return format name."""
         return "FASTQ"
 
-    def extract_profile(self, file_path: str, **kwargs: object) -> "AlleleProfile":
+    def extract_profile(
+        self,
+        file_path: str,
+        damage_filter: Optional["DamageFilter"] = None,
+        **kwargs: Any,
+    ) -> "AlleleProfile":
         """Extract profile from FASTQ.
 
         Aligns reads to reference and extracts allele observations.
 
         Args:
             file_path: Path to FASTQ file
+            damage_filter: Optional damage filter for ancient DNA
 
         Returns:
             AlleleProfile extracted from the FASTQ
         """
         raise NotImplementedError("FASTQAdapter.extract_profile() not yet implemented")
-

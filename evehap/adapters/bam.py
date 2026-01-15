@@ -4,12 +4,12 @@ Extracts mtDNA allele profiles from aligned read files using pysam.
 """
 
 from pathlib import Path
-from typing import Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import pysam
 
 from evehap.adapters.base import InputAdapter
-from evehap.core.profile import AlleleObservation, AlleleProfile, MTDNA_LENGTH
+from evehap.core.profile import MTDNA_LENGTH, AlleleObservation, AlleleProfile
 
 if TYPE_CHECKING:
     from evehap.core.damage import DamageFilter
@@ -32,9 +32,7 @@ def _load_rcrs_sequence() -> str:
         if DEFAULT_REFERENCE.exists():
             with open(DEFAULT_REFERENCE) as f:
                 lines = f.readlines()
-                _RCRS_SEQUENCE = "".join(
-                    line.strip() for line in lines if not line.startswith(">")
-                )
+                _RCRS_SEQUENCE = "".join(line.strip() for line in lines if not line.startswith(">"))
         else:
             # Fallback: empty sequence (will use sample alleles as proxy)
             _RCRS_SEQUENCE = ""
@@ -89,9 +87,9 @@ class BAMAdapter(InputAdapter):
     def extract_profile(
         self,
         file_path: str,
-        region: str = "chrM",
         damage_filter: Optional["DamageFilter"] = None,
-        **kwargs: object,
+        region: str = "chrM",
+        **kwargs: Any,
     ) -> AlleleProfile:
         """Extract profile from BAM/CRAM.
 
@@ -119,7 +117,7 @@ class BAMAdapter(InputAdapter):
         # Remove common suffixes like .chrM
         for suffix in [".chrM", ".MT", ".chrMT", ".mito"]:
             if sample_id.endswith(suffix):
-                sample_id = sample_id[:-len(suffix)]
+                sample_id = sample_id[: -len(suffix)]
                 break
 
         profile = AlleleProfile(sample_id=sample_id, source_format=self.format_name)
@@ -133,9 +131,7 @@ class BAMAdapter(InputAdapter):
             # Find the mtDNA contig
             mt_contig = self._find_mtdna_contig(bam, region)
             if mt_contig is None:
-                raise ValueError(
-                    f"Could not find mtDNA contig. Tried: {region}, {MTDNA_CONTIGS}"
-                )
+                raise ValueError(f"Could not find mtDNA contig. Tried: {region}, {MTDNA_CONTIGS}")
 
             # Get reference length
             ref_lengths = dict(zip(bam.references, bam.lengths))
@@ -165,7 +161,8 @@ class BAMAdapter(InputAdapter):
                     # Calculate coverage fraction
                     a_quick, c_quick, g_quick, t_quick = quick_coverage
                     covered_positions = sum(
-                        1 for i in range(mt_length)
+                        1
+                        for i in range(mt_length)
                         if (a_quick[i] + c_quick[i] + g_quick[i] + t_quick[i]) > 0
                     )
                     coverage_fraction = covered_positions / mt_length
@@ -186,14 +183,16 @@ class BAMAdapter(InputAdapter):
             # we need to iterate through reads to track read position and strand
             if damage_filter is not None or self.filter_read_ends:
                 # Initialize position counters: [A, C, G, T] counts for each position
-                position_counts: List[List[int]] = [
-                    [0, 0, 0, 0] for _ in range(mt_length)
-                ]
+                position_counts: List[List[int]] = [[0, 0, 0, 0] for _ in range(mt_length)]
 
                 # Iterate through reads to count alleles with damage filtering
                 for read in bam.fetch(mt_contig, 0, mt_length):
                     # Apply read-level filters (use effective threshold if adaptive)
-                    map_qual_threshold = effective_mapping_quality if self.adaptive_quality else self.min_mapping_quality
+                    map_qual_threshold = (
+                        effective_mapping_quality
+                        if self.adaptive_quality
+                        else self.min_mapping_quality
+                    )
                     if (
                         read.is_unmapped
                         or read.is_secondary
@@ -220,7 +219,11 @@ class BAMAdapter(InputAdapter):
                             continue
 
                         # Check base quality (use effective threshold if adaptive)
-                        base_qual_threshold = effective_base_quality if self.adaptive_quality else self.min_base_quality
+                        base_qual_threshold = (
+                            effective_base_quality
+                            if self.adaptive_quality
+                            else self.min_base_quality
+                        )
                         if query_quals and query_quals[query_pos] < base_qual_threshold:
                             continue
 
@@ -250,7 +253,10 @@ class BAMAdapter(InputAdapter):
                                 dist_from_3prime = read_len - 1 - query_pos
 
                             # Filter bases within read_end_length of either end
-                            if dist_from_5prime < self.read_end_length or dist_from_3prime < self.read_end_length:
+                            if (
+                                dist_from_5prime < self.read_end_length
+                                or dist_from_3prime < self.read_end_length
+                            ):
                                 continue  # Skip this base (at read end)
 
                         # Check if this base should be filtered due to damage
@@ -317,8 +323,14 @@ class BAMAdapter(InputAdapter):
                 # This returns 4 arrays (A, C, G, T) of coverage at each position
                 try:
                     # Use effective thresholds if adaptive quality is enabled
-                    base_qual_threshold = effective_base_quality if self.adaptive_quality else self.min_base_quality
-                    map_qual_threshold = effective_mapping_quality if self.adaptive_quality else self.min_mapping_quality
+                    base_qual_threshold = (
+                        effective_base_quality if self.adaptive_quality else self.min_base_quality
+                    )
+                    map_qual_threshold = (
+                        effective_mapping_quality
+                        if self.adaptive_quality
+                        else self.min_mapping_quality
+                    )
                     coverage = bam.count_coverage(
                         mt_contig,
                         start=0,
@@ -355,10 +367,10 @@ class BAMAdapter(InputAdapter):
                         continue  # Depth too low
 
                     # Build allele frequency dict
-                    alleles: Dict[str, float] = {}
+                    pos_alleles: Dict[str, float] = {}
                     for allele, count in [("A", a), ("C", c), ("G", g), ("T", t)]:
                         if count > 0:
-                            alleles[allele] = count / total
+                            pos_alleles[allele] = count / total
 
                     # Determine reference allele
                     if ref_seq and pos_0based < len(ref_seq):
@@ -372,12 +384,14 @@ class BAMAdapter(InputAdapter):
                             ref_allele = rcrs[pos_0based].upper()
                         else:
                             # Fallback: use most common allele as reference proxy
-                            ref_allele = max(alleles.keys(), key=lambda x: alleles.get(x, 0))
+                            ref_allele = max(
+                                pos_alleles.keys(), key=lambda x: pos_alleles.get(x, 0)
+                            )
 
                     obs = AlleleObservation(
                         position=pos_1based,
                         ref_allele=ref_allele,
-                        alleles=alleles,
+                        alleles=pos_alleles,
                         depth=total,
                         quality=None,  # Average quality not easily available from count_coverage
                         source=self.format_name,
@@ -387,9 +401,7 @@ class BAMAdapter(InputAdapter):
 
         return profile
 
-    def _find_mtdna_contig(
-        self, bam: pysam.AlignmentFile, preferred: str
-    ) -> Optional[str]:
+    def _find_mtdna_contig(self, bam: pysam.AlignmentFile, preferred: str) -> Optional[str]:
         """Find the mtDNA contig name in the BAM file.
 
         Args:
@@ -430,7 +442,8 @@ class BAMAdapter(InputAdapter):
             try:
                 with pysam.FastaFile(self.reference_path) as fasta:
                     if contig in fasta.references:
-                        return fasta.fetch(contig)
+                        result: str = fasta.fetch(contig)
+                        return result
             except Exception:
                 pass
 

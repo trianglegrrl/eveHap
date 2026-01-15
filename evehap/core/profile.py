@@ -4,7 +4,7 @@ These are the core data structures that represent mtDNA allele observations
 from any input source (BAM, VCF, FASTA, etc.).
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 # mtDNA genome length (rCRS)
@@ -40,9 +40,7 @@ class AlleleObservation:
     def __post_init__(self) -> None:
         """Validate the observation."""
         if not 1 <= self.position <= MTDNA_LENGTH:
-            raise ValueError(
-                f"Position {self.position} out of range [1, {MTDNA_LENGTH}]"
-            )
+            raise ValueError(f"Position {self.position} out of range [1, {MTDNA_LENGTH}]")
         if not self.alleles:
             raise ValueError("At least one allele must be provided")
         if not self.ref_allele:
@@ -78,10 +76,7 @@ class AlleleObservation:
             return False
 
         # Count alleles above threshold
-        above_threshold = sum(
-            1 for freq in self.alleles.values()
-            if freq >= HETEROPLASMY_THRESHOLD
-        )
+        above_threshold = sum(1 for freq in self.alleles.values() if freq >= HETEROPLASMY_THRESHOLD)
         return above_threshold > 1
 
     def allele_frequency(self, allele: str) -> float:
@@ -204,10 +199,7 @@ class AlleleProfile:
         Returns:
             Mean depth, or None if no observations have depth
         """
-        depths = [
-            obs.depth for obs in self.observations.values()
-            if obs.depth is not None
-        ]
+        depths = [obs.depth for obs in self.observations.values() if obs.depth is not None]
         if not depths:
             return None
         return sum(depths) / len(depths)
@@ -233,4 +225,3 @@ class AlleleProfile:
             f"positions={len(self.covered_positions)}, "
             f"coverage={self.coverage_fraction():.1%})"
         )
-

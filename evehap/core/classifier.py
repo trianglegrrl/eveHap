@@ -12,12 +12,11 @@ The Kulczynski scorer uses mutation weights (phylogenetic weights) as in Haplogr
 - This naturally prevents basal haplogroups from dominating
 """
 
-import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 
-from evehap.core.phylotree import Phylotree, PhyloNode, Mutation
+from evehap.core.phylotree import PhyloNode, Phylotree
 from evehap.core.profile import AlleleProfile
 from evehap.output.result import HaplogroupResult
 
@@ -55,11 +54,14 @@ def load_mutation_weights(weights_path: Optional[str] = None) -> Dict[str, float
             if weights_path:
                 break
 
+    if weights_path is None:
+        return weights
+
     path = Path(weights_path)
     if not path.exists():
         return weights
 
-    with open(path, "r") as f:
+    with open(path) as f:
         for line in f:
             line = line.strip()
             if not line or line.startswith("#"):
@@ -142,7 +144,7 @@ class KulczynskiScorer:
         """
         self.phylotree = phylotree
         self.reference = reference
-        self._cache: Dict[str, Set[int]] = {}
+        self._cache: Dict[str, Set[Tuple[int, str]]] = {}
         self.weights = load_mutation_weights(weights_path)
 
     def _get_mutation_weight(self, position: int, derived: str) -> float:
@@ -194,9 +196,7 @@ class KulczynskiScorer:
             self._cache[cache_key] = expected
         return self._cache[cache_key]
 
-    def precompute_sample_info(
-        self, profile: AlleleProfile
-    ) -> Tuple[Set[Tuple[int, str]], float]:
+    def precompute_sample_info(self, profile: AlleleProfile) -> Tuple[Set[Tuple[int, str]], float]:
         """Pre-compute sample variants and weight once for all haplogroups.
 
         This is a MAJOR optimization - avoids iterating 15k+ observations
@@ -261,14 +261,14 @@ class KulczynskiScorer:
         # For VCF data (assumes_full_coverage), positions not in observations are reference
         # We need to add weight for expected mutations that match reference
         uses_reference = (
-            hasattr(profile, 'assumes_full_coverage')
+            hasattr(profile, "assumes_full_coverage")
             and profile.assumes_full_coverage
             and self.reference is not None
         )
 
         # Calculate WEIGHTED sums for expected mutations
         weight_expected = 0.0  # Sum of weights for expected mutations in covered range
-        weight_found = 0.0     # Sum of weights for found mutations
+        weight_found = 0.0  # Sum of weights for found mutations
 
         for pos, derived in expected:
             mutation_weight = self._get_mutation_weight(pos, derived)
@@ -279,7 +279,7 @@ class KulczynskiScorer:
                 weight_expected += mutation_weight
                 if obs.major_allele == derived:
                     weight_found += mutation_weight
-            elif uses_reference and pos <= len(self.reference):
+            elif uses_reference and self.reference is not None and pos <= len(self.reference):
                 # VCF mode: position not in profile means reference allele
                 weight_expected += mutation_weight
                 ref_allele = self.reference[pos - 1].upper()  # 0-indexed
@@ -437,10 +437,10 @@ class KulczynskiScorer:
         visited: Set[str] = set()
 
         # Mark all ancestors as visited (we don't need to score them)
-        node = start_node
-        while node is not None:
-            visited.add(node.haplogroup)
-            node = node.parent
+        ancestor: Optional[PhyloNode] = start_node
+        while ancestor is not None:
+            visited.add(ancestor.haplogroup)
+            ancestor = ancestor.parent
 
         # Start with start_node's children
         for child in start_node.children:
@@ -520,9 +520,7 @@ class TreeTraverser:
         self.max_conflicts = max_conflicts
         self.min_support_ratio = min_support_ratio
 
-    def _evaluate_branch(
-        self, profile: AlleleProfile, node: PhyloNode
-    ) -> Tuple[int, int, int]:
+    def _evaluate_branch(self, profile: AlleleProfile, node: PhyloNode) -> Tuple[int, int, int]:
         """Evaluate how well profile supports a branch.
 
         Args:
@@ -600,9 +598,11 @@ class TreeTraverser:
                     support_ratio = 0.5 if uncovered > 0 else 0.0
 
                 # Only consider branches with sufficient support
-                if support_ratio >= self.min_support_ratio or (
-                    derived > 0 and ancestral == 0
-                ) or len(child.defining_mutations) == 0:
+                if (
+                    support_ratio >= self.min_support_ratio
+                    or (derived > 0 and ancestral == 0)
+                    or len(child.defining_mutations) == 0
+                ):
                     if support_ratio > best_score or (
                         support_ratio == best_score and derived > best_derived
                     ):
@@ -758,7 +758,9 @@ class Classifier:
         result.confidence = best_score
 
         # Apply coverage-based confidence adjustment
-        result.confidence = self._adjust_confidence_for_coverage(result.confidence, result.coverage_fraction)
+        result.confidence = self._adjust_confidence_for_coverage(
+            result.confidence, result.coverage_fraction
+        )
 
         # Alternative haplogroups
         result.alternative_haplogroups = scores[1:5]
@@ -785,21 +787,27 @@ class Classifier:
                 if pos not in expected_positions:
                     # Variant at unexpected position = private mutation
                     from .phylotree import Mutation
-                    result.extra_mutations.append(Mutation(
-                        position=pos,
-                        ancestral=ref,
-                        derived=alt,
-                        weight=1.0,
-                    ))
+
+                    result.extra_mutations.append(
+                        Mutation(
+                            position=pos,
+                            ancestral=ref,
+                            derived=alt,
+                            weight=1.0,
+                        )
+                    )
                 elif expected_positions[pos] != alt:
                     # Different allele than expected = also private
                     from .phylotree import Mutation
-                    result.extra_mutations.append(Mutation(
-                        position=pos,
-                        ancestral=ref,
-                        derived=alt,
-                        weight=1.0,
-                    ))
+
+                    result.extra_mutations.append(
+                        Mutation(
+                            position=pos,
+                            ancestral=ref,
+                            derived=alt,
+                            weight=1.0,
+                        )
+                    )
 
         # Determine quality
         if best_score >= 0.9:
@@ -837,7 +845,9 @@ class Classifier:
         result.confidence = traversal.confidence
 
         # Apply coverage-based confidence adjustment
-        result.confidence = self._adjust_confidence_for_coverage(result.confidence, result.coverage_fraction)
+        result.confidence = self._adjust_confidence_for_coverage(
+            result.confidence, result.coverage_fraction
+        )
 
         # Get expected mutations
         node = self.phylotree.get_haplogroup(traversal.haplogroup)
@@ -912,9 +922,7 @@ class Classifier:
 
         # Check for heteroplasmy
         heteroplasmic_count = sum(
-            1 for obs in profile.observations.values()
-            if obs.is_heteroplasmic
+            1 for obs in profile.observations.values() if obs.is_heteroplasmic
         )
         if heteroplasmic_count > 0:
             result.warnings.append("HETEROPLASMY")
-

@@ -5,12 +5,12 @@ Uses pysam's VariantFile for efficient parsing of VCF/BCF files.
 """
 
 from pathlib import Path
-from typing import Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import pysam
 
 from evehap.adapters.base import InputAdapter
-from evehap.core.profile import AlleleObservation, AlleleProfile, MTDNA_LENGTH
+from evehap.core.profile import AlleleObservation, AlleleProfile
 
 if TYPE_CHECKING:
     from evehap.core.damage import DamageFilter
@@ -76,7 +76,7 @@ class VCFAdapter(InputAdapter):
         self,
         file_path: str,
         damage_filter: Optional["DamageFilter"] = None,
-        **kwargs: object,
+        **kwargs: Any,
     ) -> AlleleProfile:
         """Extract profile from VCF.
 
@@ -102,8 +102,8 @@ class VCFAdapter(InputAdapter):
         if not ref_path.exists():
             raise FileNotFoundError(f"Reference file not found: {self.reference_path}")
 
-        # Load reference sequence
-        ref_sequence = self._load_reference()
+        # Load reference sequence (used internally by _add_snp_observation)
+        self._load_reference()
 
         # Open VCF
         with pysam.VariantFile(file_path) as vcf:
@@ -201,8 +201,13 @@ class VCFAdapter(InputAdapter):
                                     snp_ref = r
                                     snp_alt = a
                                     self._add_snp_observation(
-                                        variant_positions, snp_pos, snp_ref, snp_alt,
-                                        freq, dp, record.qual
+                                        variant_positions,
+                                        snp_pos,
+                                        snp_ref,
+                                        snp_alt,
+                                        freq,
+                                        dp,
+                                        record.qual,
                                     )
                             continue  # Already added all SNPs
                         elif len(allele) < len(ref):
@@ -213,8 +218,7 @@ class VCFAdapter(InputAdapter):
                                 del_pos = pos + i
                                 del_ref = ref[i]
                                 self._add_snp_observation(
-                                    variant_positions, del_pos, del_ref, "-",
-                                    freq, dp, record.qual
+                                    variant_positions, del_pos, del_ref, "-", freq, dp, record.qual
                                 )
                             continue  # Already added all deletions
                         else:
@@ -225,8 +229,7 @@ class VCFAdapter(InputAdapter):
 
                         # Add the observation
                         self._add_snp_observation(
-                            variant_positions, snp_pos, snp_ref, snp_alt,
-                            freq, dp, record.qual
+                            variant_positions, snp_pos, snp_ref, snp_alt, freq, dp, record.qual
                         )
 
             except ValueError:
@@ -236,7 +239,7 @@ class VCFAdapter(InputAdapter):
             # Add only variant positions to profile
             # Reference positions are NOT added - the classifier should
             # treat missing positions as reference matches
-            for pos, obs in variant_positions.items():
+            for _pos, obs in variant_positions.items():
                 profile.add_observation(obs)
 
         return profile
@@ -274,10 +277,7 @@ class VCFAdapter(InputAdapter):
         else:
             # Update existing observation
             obs = variant_positions[pos]
-            obs.alleles[alt.upper()] = max(
-                obs.alleles.get(alt.upper(), 0.0),
-                freq
-            )
+            obs.alleles[alt.upper()] = max(obs.alleles.get(alt.upper(), 0.0), freq)
 
     def _load_reference(self) -> str:
         """Load reference sequence from FASTA.
@@ -289,18 +289,18 @@ class VCFAdapter(InputAdapter):
             # Find mtDNA contig
             for contig in MTDNA_CONTIGS:
                 if contig in fasta.references:
-                    return fasta.fetch(contig)
+                    result: str = fasta.fetch(contig)
+                    return result
 
             # Try first reference if short (likely mtDNA)
             if fasta.references:
                 first_ref = fasta.references[0]
-                seq = fasta.fetch(first_ref)
+                seq: str = fasta.fetch(first_ref)
                 if len(seq) < 20000:  # Likely mtDNA
                     return seq
 
             raise ValueError(
-                f"Could not find mtDNA contig in reference. "
-                f"Available: {fasta.references}"
+                f"Could not find mtDNA contig in reference. " f"Available: {fasta.references}"
             )
 
     def _find_mtdna_contig(self, vcf: pysam.VariantFile) -> str:
@@ -325,4 +325,3 @@ class VCFAdapter(InputAdapter):
 
         # If no contigs defined, use mt_contig and hope for the best
         return self.mt_contig
-

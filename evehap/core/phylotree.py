@@ -7,7 +7,7 @@ import re
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 
 if TYPE_CHECKING:
     from evehap.core.profile import AlleleProfile
@@ -143,7 +143,7 @@ class PhyloNode:
     def distance_to(self, other: "PhyloNode") -> int:
         """Phylogenetic distance (number of branches) to another node."""
         # Find common ancestor
-        self_path = set(n.haplogroup for n in self.get_path_from_root())
+        self_path = {n.haplogroup for n in self.get_path_from_root()}
         other_path = other.get_path_from_root()
 
         # Find where paths diverge
@@ -158,16 +158,16 @@ class PhyloNode:
 
         # Count edges from self to common + common to other
         self_dist = 0
-        node = self
-        while node and node.haplogroup != common.haplogroup:
+        current: Optional[PhyloNode] = self
+        while current and current.haplogroup != common.haplogroup:
             self_dist += 1
-            node = node.parent
+            current = current.parent
 
         other_dist = 0
-        node = other
-        while node and node.haplogroup != common.haplogroup:
+        current = other
+        while current and current.haplogroup != common.haplogroup:
             other_dist += 1
-            node = node.parent
+            current = current.parent
 
         return self_dist + other_dist
 
@@ -345,9 +345,7 @@ class Phylotree:
         # We need to find the top-level haplogroups first
         for child_element in root_element:
             if child_element.tag == "haplogroup":
-                phylotree._parse_haplogroup_element(
-                    child_element, phylotree.root, weights
-                )
+                phylotree._parse_haplogroup_element(child_element, phylotree.root, weights)
 
         return phylotree
 
@@ -426,7 +424,7 @@ class Phylotree:
         if not weights_file.exists():
             return weights
 
-        with open(weights_file, "r") as f:
+        with open(weights_file) as f:
             for line in f:
                 line = line.strip()
                 if not line or line.startswith("#"):
@@ -492,4 +490,3 @@ class Phylotree:
             True if this is a hypermutable hotspot position
         """
         return position in self.hotspots
-

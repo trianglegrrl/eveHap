@@ -6,10 +6,10 @@ relative to the rCRS reference.
 """
 
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 from evehap.adapters.base import InputAdapter
-from evehap.core.profile import AlleleObservation, AlleleProfile, MTDNA_LENGTH
+from evehap.core.profile import AlleleObservation, AlleleProfile
 
 if TYPE_CHECKING:
     from evehap.core.damage import DamageFilter
@@ -22,19 +22,19 @@ IUPAC_CODES: Dict[str, str] = {
     "G": "G",
     "T": "T",
     "U": "T",  # Treat U as T
-    "R": "AG",   # purine
-    "Y": "CT",   # pyrimidine
-    "S": "GC",   # strong
-    "W": "AT",   # weak
-    "K": "GT",   # keto
-    "M": "AC",   # amino
+    "R": "AG",  # purine
+    "Y": "CT",  # pyrimidine
+    "S": "GC",  # strong
+    "W": "AT",  # weak
+    "K": "GT",  # keto
+    "M": "AC",  # amino
     "B": "CGT",  # not A
     "D": "AGT",  # not C
     "H": "ACT",  # not G
     "V": "ACG",  # not T
-    "N": "",     # any/unknown - treat as missing
-    "-": "",     # gap - treat as missing
-    ".": "",     # gap - treat as missing
+    "N": "",  # any/unknown - treat as missing
+    "-": "",  # gap - treat as missing
+    ".": "",  # gap - treat as missing
 }
 
 
@@ -91,9 +91,10 @@ class FASTAAdapter(InputAdapter):
         """
         if self._aligner is None:
             from Bio.Align import PairwiseAligner
+
             self._aligner = PairwiseAligner()
             # Global alignment
-            self._aligner.mode = 'global'
+            self._aligner.mode = "global"
             # Scoring: favor matches, penalize gaps heavily
             self._aligner.match_score = 2
             self._aligner.mismatch_score = -1
@@ -181,7 +182,6 @@ class FASTAAdapter(InputAdapter):
                 sample_pos += 1
 
             # Add aligned block
-            block_len = ref_end - ref_start
             aligned_ref += ref[ref_start:ref_end]
             aligned_sample += sample[sample_start:sample_end]
             ref_pos = ref_end
@@ -260,7 +260,7 @@ class FASTAAdapter(InputAdapter):
                 else:
                     # Ambiguous - split equally
                     freq = 1.0 / len(resolved_bases)
-                    alleles = {base: freq for base in resolved_bases}
+                    alleles = dict.fromkeys(resolved_bases, freq)
 
             obs = AlleleObservation(
                 position=pos_1based,
@@ -324,7 +324,7 @@ class FASTAAdapter(InputAdapter):
                     alleles = {resolved_bases: 1.0}
                 else:
                     freq = 1.0 / len(resolved_bases)
-                    alleles = {base: freq for base in resolved_bases}
+                    alleles = dict.fromkeys(resolved_bases, freq)
 
             obs = AlleleObservation(
                 position=pos_1based,
@@ -342,7 +342,7 @@ class FASTAAdapter(InputAdapter):
         self,
         file_path: str,
         damage_filter: Optional["DamageFilter"] = None,
-        **kwargs: object,
+        **kwargs: Any,
     ) -> AlleleProfile:
         """Extract profile from FASTA.
 
@@ -377,17 +377,11 @@ class FASTAAdapter(InputAdapter):
         # Decide whether to use alignment
         if self._needs_alignment(ref_sequence, sample_sequence):
             # Use alignment-aware extraction
-            aligned_ref, aligned_sample = self._align_sequences(
-                ref_sequence, sample_sequence
-            )
-            return self._extract_variants_from_alignment(
-                aligned_ref, aligned_sample, sample_id
-            )
+            aligned_ref, aligned_sample = self._align_sequences(ref_sequence, sample_sequence)
+            return self._extract_variants_from_alignment(aligned_ref, aligned_sample, sample_id)
         else:
             # Use fast naive extraction
-            return self._extract_variants_naive(
-                ref_sequence, sample_sequence, sample_id
-            )
+            return self._extract_variants_naive(ref_sequence, sample_sequence, sample_id)
 
     def _load_reference(self) -> str:
         """Load reference sequence from FASTA.
@@ -437,7 +431,7 @@ class FASTAAdapter(InputAdapter):
         current_id: Optional[str] = None
         current_seq: list = []
 
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             for line in f:
                 line = line.strip()
                 if not line:

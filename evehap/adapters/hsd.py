@@ -9,10 +9,10 @@ HSD files contain tab-delimited polymorphism data with notation like:
 
 import re
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from evehap.adapters.base import InputAdapter
-from evehap.core.profile import AlleleObservation, AlleleProfile, MTDNA_LENGTH
+from evehap.core.profile import AlleleObservation, AlleleProfile
 
 if TYPE_CHECKING:
     from evehap.core.damage import DamageFilter
@@ -119,7 +119,7 @@ class HSDAdapter(InputAdapter):
 
         samples = []
         first_line = True
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             for line in f:
                 line = line.strip()
                 if not line:
@@ -144,9 +144,9 @@ class HSDAdapter(InputAdapter):
     def extract_profile(
         self,
         file_path: str,
-        sample_id: Optional[str] = None,
         damage_filter: Optional["DamageFilter"] = None,
-        **kwargs: object,
+        sample_id: Optional[str] = None,
+        **kwargs: Any,
     ) -> AlleleProfile:
         """Extract profile from HSD file.
 
@@ -182,8 +182,7 @@ class HSDAdapter(InputAdapter):
             if sample_id not in samples_data:
                 available = list(samples_data.keys())[:5]
                 raise ValueError(
-                    f"Sample '{sample_id}' not found in HSD. "
-                    f"Available: {available}..."
+                    f"Sample '{sample_id}' not found in HSD. " f"Available: {available}..."
                 )
             target_id = sample_id
 
@@ -299,7 +298,7 @@ class HSDAdapter(InputAdapter):
         """
         samples: Dict[str, Dict] = {}
 
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             first_line = True
 
             for line in f:
@@ -363,7 +362,7 @@ class HSDAdapter(InputAdapter):
 
         # Simple FASTA parser
         sequence_lines = []
-        with open(self.reference_path, "r") as f:
+        with open(self.reference_path) as f:
             for line in f:
                 line = line.strip()
                 if not line or line.startswith(">"):
@@ -371,4 +370,3 @@ class HSDAdapter(InputAdapter):
                 sequence_lines.append(line)
 
         return "".join(sequence_lines)
-

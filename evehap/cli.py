@@ -6,7 +6,7 @@ Provides a simple CLI for haplogroup classification from various input formats.
 import json
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import click
 
@@ -18,9 +18,7 @@ from evehap.adapters.vcf import VCFAdapter
 from evehap.core.classifier import Classifier
 from evehap.core.damage import DamageFilter
 from evehap.core.phylotree import Phylotree
-from evehap.core.profile import AlleleProfile
 from evehap.output.result import HaplogroupResult
-
 
 # Default data paths (relative to package)
 PACKAGE_DIR = Path(__file__).parent.parent
@@ -28,7 +26,7 @@ DATA_DIR = PACKAGE_DIR / "data"
 
 # Tree type configurations
 # Each tree type specifies its tree file, weights file, and reference
-TREE_TYPES = {
+TREE_TYPES: Dict[str, Dict[str, Union[Path, str]]] = {
     "rcrs": {
         "tree": DATA_DIR / "phylotree" / "tree-rcrs.xml",
         "weights": DATA_DIR / "phylotree" / "weights-rcrs.txt",
@@ -43,11 +41,11 @@ TREE_TYPES = {
     },
 }
 
-# Legacy aliases for backwards compatibility
-BUNDLED_TREE_RSRS = TREE_TYPES["rsrs"]["tree"]
-BUNDLED_TREE_RCRS = TREE_TYPES["rcrs"]["tree"]
-BUNDLED_REFERENCE = TREE_TYPES["rcrs"]["reference"]
-DEFAULT_WEIGHTS = TREE_TYPES["rsrs"]["weights"]
+# Legacy aliases for backwards compatibility (cast to Path for type safety)
+BUNDLED_TREE_RSRS: Path = Path(TREE_TYPES["rsrs"]["tree"])
+BUNDLED_TREE_RCRS: Path = Path(TREE_TYPES["rcrs"]["tree"])
+BUNDLED_REFERENCE: Path = Path(TREE_TYPES["rcrs"]["reference"])
+DEFAULT_WEIGHTS: Path = Path(TREE_TYPES["rsrs"]["weights"])
 
 # Download resources configuration
 # Note: 'dest' is relative path within the download directory
@@ -177,7 +175,7 @@ def get_adapter(
     elif format_name == "fasta":
         return FASTAAdapter(reference_path=ref_path)
     elif format_name == "hsd":
-        return HSDAdapter(reference_path=ref_path, sample_id=sample_id)
+        return HSDAdapter(reference_path=ref_path)
     elif format_name == "microarray":
         return MicroarrayAdapter()
     else:
@@ -197,24 +195,40 @@ def main() -> None:
 
 @main.command()
 @click.argument("input_files", type=click.Path(exists=True), nargs=-1, required=True)
-@click.option("--tree-type", required=True,
-              type=click.Choice(["rcrs", "rsrs"]),
-              help="REQUIRED: Phylotree type to use (rcrs=modern, rsrs=ancient DNA)")
-@click.option("--format", "input_format", default="auto",
-              help="Input format (auto, bam, vcf, fasta, hsd, microarray)")
+@click.option(
+    "--tree-type",
+    required=True,
+    type=click.Choice(["rcrs", "rsrs"]),
+    help="REQUIRED: Phylotree type to use (rcrs=modern, rsrs=ancient DNA)",
+)
+@click.option(
+    "--format",
+    "input_format",
+    default="auto",
+    help="Input format (auto, bam, vcf, fasta, hsd, microarray)",
+)
 @click.option("--output", "-o", type=click.Path(), help="Output file (default: stdout)")
-@click.option("--output-format", default="tsv",
-              type=click.Choice(["json", "tsv", "text"]),
-              help="Output format")
-@click.option("--tree", required=False,
-              help="Override phylotree file path (default: auto-select based on --tree-type)")
-@click.option("--reference", required=False,
-              help="Override reference FASTA path (default: bundled rCRS)")
-@click.option("--damage-filter", is_flag=True,
-              help="Apply ancient DNA damage filtering")
-@click.option("--method", default="auto",
-              type=click.Choice(["auto", "kulczynski", "traversal"]),
-              help="Classification method")
+@click.option(
+    "--output-format",
+    default="tsv",
+    type=click.Choice(["json", "tsv", "text"]),
+    help="Output format",
+)
+@click.option(
+    "--tree",
+    required=False,
+    help="Override phylotree file path (default: auto-select based on --tree-type)",
+)
+@click.option(
+    "--reference", required=False, help="Override reference FASTA path (default: bundled rCRS)"
+)
+@click.option("--damage-filter", is_flag=True, help="Apply ancient DNA damage filtering")
+@click.option(
+    "--method",
+    default="auto",
+    type=click.Choice(["auto", "kulczynski", "traversal"]),
+    help="Classification method",
+)
 @click.option("--top-n", default=5, help="Number of alternatives to report")
 @click.option("--sample-id", help="Sample ID to extract from multi-sample VCF")
 @click.option("--quiet", "-q", is_flag=True, help="Suppress progress output")
@@ -287,12 +301,16 @@ def classify(
             sys.exit(1)
 
     # Get weights for this tree type
-    weights_path = str(type_config["weights"]) if type_config["weights"].exists() else None
+    weights_file = Path(type_config["weights"])
+    weights_path = str(weights_file) if weights_file.exists() else None
 
     try:
         phylotree = Phylotree.load(tree_path, weights_path)
         if not quiet:
-            click.echo(f"Using phylotree: {Path(tree_path).name} ({len(phylotree.nodes)} haplogroups)", err=True)
+            click.echo(
+                f"Using phylotree: {Path(tree_path).name} ({len(phylotree.nodes)} haplogroups)",
+                err=True,
+            )
             click.echo(f"Using reference: {Path(reference_path).name}", err=True)
             click.echo(f"Tree type: {tree_type} ({type_config['description']})", err=True)
     except Exception as e:
@@ -303,6 +321,7 @@ def classify(
 
     # Load reference sequence for classifier
     import pysam
+
     try:
         with pysam.FastaFile(reference_path) as fasta:
             reference_sequence = fasta.fetch(fasta.references[0])
@@ -351,7 +370,7 @@ def classify(
                 click.echo(
                     f"  → {result.haplogroup} "
                     f"(confidence: {result.confidence:.1%}, quality: {result.quality})",
-                    err=True
+                    err=True,
                 )
 
         except Exception as e:
@@ -410,8 +429,7 @@ def format_output(results: List[HaplogroupResult], fmt: str) -> str:
 
 @main.command()
 @click.argument("input_file", type=click.Path(exists=True))
-@click.option("--reference", type=click.Path(exists=True),
-              help="Path to rCRS reference FASTA")
+@click.option("--reference", type=click.Path(exists=True), help="Path to rCRS reference FASTA")
 def info(input_file: str, reference: Optional[str]) -> None:
     """Show information about an input file.
 
@@ -458,7 +476,7 @@ def damage(bam_file: str) -> None:
     df = DamageFilter()
     stats = df.estimate_damage(bam_file, max_reads=10000)
 
-    click.echo(f"\nDamage Statistics:")
+    click.echo("\nDamage Statistics:")
     click.echo(f"  Reads analyzed: {stats.total_reads:,}")
     click.echo(f"  C→T rate at 5' end: {stats.ct_5prime_rate:.2%}")
     click.echo(f"  G→A rate at 3' end: {stats.ga_3prime_rate:.2%}")
@@ -498,14 +516,15 @@ def _save_metadata(dest: Path, metadata: dict) -> None:
         json.dump(metadata, f, indent=2)
 
 
-def _load_metadata(dest: Path) -> dict:
+def _load_metadata(dest: Path) -> Dict[str, Any]:
     """Load saved metadata for a file."""
     import json
 
     meta_file = dest.parent / f".{dest.name}.meta"
     if meta_file.exists():
         with open(meta_file) as f:
-            return json.load(f)
+            result: Dict[str, Any] = json.load(f)
+            return result
     return {}
 
 
@@ -521,22 +540,23 @@ def _check_update_available(dest: Path, url: str) -> bool:
 
     # Compare by ETag first
     if local_meta.get("etag") and remote_meta.get("etag"):
-        return local_meta["etag"] != remote_meta["etag"]
+        return bool(local_meta["etag"] != remote_meta["etag"])
 
     # Compare by Last-Modified
     if local_meta.get("last_modified") and remote_meta.get("last_modified"):
-        return local_meta["last_modified"] != remote_meta["last_modified"]
+        return bool(local_meta["last_modified"] != remote_meta["last_modified"])
 
     # Compare by Content-Length as fallback
     if local_meta.get("content_length") and remote_meta.get("content_length"):
-        return local_meta["content_length"] != remote_meta["content_length"]
+        return bool(local_meta["content_length"] != remote_meta["content_length"])
 
     return False
 
 
 @main.command()
 @click.option(
-    "--outdir", "-o",
+    "--outdir",
+    "-o",
     type=click.Path(),
     required=True,
     help="REQUIRED: Directory to save downloaded files",
@@ -589,8 +609,8 @@ def download(
     Then use with classify:
         evehap classify sample.bam --tree ./evehap_data/mitoleaf_tree.json --reference ./evehap_data/rCRS.fasta
     """
-    import urllib.request
     import urllib.error
+    import urllib.request
 
     download_dir = Path(outdir)
 
@@ -612,8 +632,7 @@ def download(
     if resource:
         # Specific resources requested
         resources_to_download = {
-            name: info for name, info in DOWNLOAD_RESOURCES.items()
-            if name in resource
+            name: info for name, info in DOWNLOAD_RESOURCES.items() if name in resource
         }
         missing = set(resource) - set(resources_to_download.keys())
         if missing:
@@ -625,7 +644,8 @@ def download(
     else:
         # Filter by category
         resources_to_download = {
-            name: info for name, info in DOWNLOAD_RESOURCES.items()
+            name: info
+            for name, info in DOWNLOAD_RESOURCES.items()
             if category == "all" or info["category"] == category
         }
 
@@ -646,7 +666,7 @@ def download(
 
         if updates_available:
             resources_arg = " --resource ".join(updates_available)
-            click.echo(f"\nTo update, run:")
+            click.echo("\nTo update, run:")
             click.echo(f"  evehap download --outdir {outdir} --resource {resources_arg} --force")
         return
 
@@ -688,7 +708,7 @@ def download(
 
         except urllib.error.URLError as e:
             click.echo(f"  ✗ Failed: {e}", err=True)
-            click.echo(f"     Check your network connection and try again.", err=True)
+            click.echo("     Check your network connection and try again.", err=True)
         except Exception as e:
             click.echo(f"  ✗ Error: {e}", err=True)
 
@@ -704,7 +724,7 @@ def download(
     elif tree_file.exists():
         click.echo(f"  evehap classify sample.bam --tree {tree_file} --reference rcrs")
     else:
-        click.echo(f"  evehap classify sample.bam --tree rsrs --reference rcrs  # bundled resources")
+        click.echo("  evehap classify sample.bam --tree rsrs --reference rcrs  # bundled resources")
 
 
 @main.command()
@@ -724,7 +744,9 @@ def version() -> None:
         if path.exists():
             size_kb = path.stat().st_size / 1024
             node_count = "~5400" if "rsrs" in str(path) else "~2400"
-            click.echo(f"    ✓ --tree {alias}  ({path.name}, {size_kb:.1f} KB, {node_count} haplogroups)")
+            click.echo(
+                f"    ✓ --tree {alias}  ({path.name}, {size_kb:.1f} KB, {node_count} haplogroups)"
+            )
         else:
             click.echo(f"    ✗ --tree {alias}  (not found)")
 
@@ -733,7 +755,7 @@ def version() -> None:
         size_kb = BUNDLED_REFERENCE.stat().st_size / 1024
         click.echo(f"    ✓ --reference rcrs  ({BUNDLED_REFERENCE.name}, {size_kb:.1f} KB)")
     else:
-        click.echo(f"    ✗ --reference rcrs  (not found)")
+        click.echo("    ✗ --reference rcrs  (not found)")
 
     click.echo("\nDownloadable resources:")
     for name, info in DOWNLOAD_RESOURCES.items():
@@ -745,9 +767,10 @@ def version() -> None:
     click.echo("")
     click.echo("  # Download and use mitoLeaf (6400+ haplogroups):")
     click.echo("  evehap download --outdir ./evehap_data/")
-    click.echo("  evehap classify sample.bam --tree ./evehap_data/mitoleaf_tree.json --reference ./evehap_data/rCRS.fasta")
+    click.echo(
+        "  evehap classify sample.bam --tree ./evehap_data/mitoleaf_tree.json --reference ./evehap_data/rCRS.fasta"
+    )
 
 
 if __name__ == "__main__":
     main()
-

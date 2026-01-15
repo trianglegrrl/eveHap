@@ -12,7 +12,7 @@ This module provides tools to:
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, Optional
 
 import pysam
 
@@ -155,7 +155,7 @@ class DamageFilter:
         Returns:
             Filtered AlleleProfile (may be same object if no filtering)
         """
-        from evehap.core.profile import AlleleProfile, AlleleObservation
+        from evehap.core.profile import AlleleProfile
 
         if not remove_potential_damage:
             return profile
@@ -166,15 +166,15 @@ class DamageFilter:
             source_format=profile.source_format,
         )
         filtered.metadata = profile.metadata.copy()
-        filtered.metadata['damage_filtered'] = True
+        filtered.metadata["damage_filtered"] = True
 
         damage_removed = 0
         total_variants = 0
 
         for pos, obs in profile.observations.items():
             # Check if marked as potential damage
-            if hasattr(obs, 'metadata') and obs.metadata:
-                if obs.metadata.get('potential_damage', False):
+            if hasattr(obs, "metadata") and obs.metadata:
+                if obs.metadata.get("potential_damage", False):
                     damage_removed += 1
                     continue  # Skip this observation
 
@@ -187,15 +187,15 @@ class DamageFilter:
                     ref_base = reference[pos - 1].upper()
                     alt_base = obs.major_allele.upper()
                     # C→T damage
-                    if ref_base == 'C' and alt_base == 'T':
+                    if ref_base == "C" and alt_base == "T":
                         is_damage = True
                     # G→A damage (complement)
-                    elif ref_base == 'G' and alt_base == 'A':
+                    elif ref_base == "G" and alt_base == "A":
                         is_damage = True
                 else:
                     # Without reference, filter all T transitions
                     # (conservative for aDNA)
-                    if obs.major_allele.upper() == 'T':
+                    if obs.major_allele.upper() == "T":
                         is_damage = True
 
                 if is_damage:
@@ -204,8 +204,8 @@ class DamageFilter:
 
             filtered.add_observation(obs)
 
-        filtered.metadata['damage_removed'] = damage_removed
-        filtered.metadata['original_variants'] = total_variants
+        filtered.metadata["damage_removed"] = damage_removed
+        filtered.metadata["original_variants"] = total_variants
 
         return filtered
 
@@ -215,13 +215,13 @@ class DamageFilter:
         reference: str,
     ) -> "AlleleProfile":
         """Strict damage filtering: remove all C→T and G→A variants.
-        
+
         This is aggressive but effective for heavily damaged aDNA.
-        
+
         Args:
             profile: AlleleProfile to filter
             reference: Reference sequence (required)
-            
+
         Returns:
             Filtered AlleleProfile with damage removed
         """
@@ -257,9 +257,9 @@ class DamageFilter:
 
         # Count damage events
         ct_5prime = 0  # C→T at 5' end
-        c_5prime = 0   # Total C at 5' end
+        c_5prime = 0  # Total C at 5' end
         ga_3prime = 0  # G→A at 3' end
-        g_3prime = 0   # Total G at 3' end
+        g_3prime = 0  # Total G at 3' end
 
         reads_analyzed = 0
         damaged_reads = 0
@@ -301,7 +301,7 @@ class DamageFilter:
                     read_len = len(query_seq)
                     is_reverse = read.is_reverse
 
-                    for query_pos, ref_pos, ref_base in aligned_pairs:
+                    for query_pos, _ref_pos, ref_base in aligned_pairs:
                         if query_pos is None or ref_base is None:
                             continue
 
@@ -348,4 +348,3 @@ class DamageFilter:
         stats.ga_3prime_rate = ga_3prime / g_3prime if g_3prime > 0 else 0.0
 
         return stats
-

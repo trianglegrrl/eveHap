@@ -10,7 +10,10 @@ has the complete structure. This module provides translation between them.
 """
 
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, Optional, Tuple
+
+if TYPE_CHECKING:
+    from evehap.core.profile import AlleleProfile
 
 # Package data directory
 PACKAGE_DIR = Path(__file__).parent.parent.parent
@@ -139,7 +142,7 @@ def translate_profile_reference(
     Returns:
         New AlleleProfile with updated reference alleles
     """
-    from evehap.core.profile import AlleleProfile, AlleleObservation
+    from evehap.core.profile import AlleleObservation, AlleleProfile
 
     if from_ref == to_ref:
         return profile
@@ -174,5 +177,3 @@ def translate_profile_reference(
         new_profile.add_observation(new_obs)
 
     return new_profile
-
-

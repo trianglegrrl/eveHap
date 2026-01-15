@@ -1,9 +1,10 @@
 """Base adapter interface for eveHap."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
+    from evehap.core.damage import DamageFilter
     from evehap.core.profile import AlleleProfile
 
 
@@ -27,11 +28,17 @@ class InputAdapter(ABC):
         pass
 
     @abstractmethod
-    def extract_profile(self, file_path: str, **kwargs: object) -> "AlleleProfile":
+    def extract_profile(
+        self,
+        file_path: str,
+        damage_filter: Optional["DamageFilter"] = None,
+        **kwargs: Any,
+    ) -> "AlleleProfile":
         """Extract AlleleProfile from input file.
 
         Args:
             file_path: Path to the input file
+            damage_filter: Optional damage filter for ancient DNA
             **kwargs: Additional adapter-specific options
 
         Returns:
@@ -48,4 +55,3 @@ class InputAdapter(ABC):
             Human-readable format name
         """
         pass
-

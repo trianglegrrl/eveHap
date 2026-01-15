@@ -4,11 +4,11 @@ Stub module - to be implemented.
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 if TYPE_CHECKING:
-    from evehap.core.phylotree import Mutation
     from evehap.core.damage import DamageStats
+    from evehap.core.phylotree import Mutation
 
 
 # QC warning codes and messages
@@ -94,16 +94,18 @@ class HaplogroupResult:
         Returns:
             Tab-separated values string
         """
-        return "\t".join([
-            self.sample_id,
-            self.haplogroup,
-            f"{self.confidence:.4f}",
-            self.quality,
-            f"{self.coverage_fraction:.4f}",
-            str(self.mean_depth) if self.mean_depth else "",
-            self.method,
-            ";".join(self.warnings) if self.warnings else "",
-        ])
+        return "\t".join(
+            [
+                self.sample_id,
+                self.haplogroup,
+                f"{self.confidence:.4f}",
+                self.quality,
+                f"{self.coverage_fraction:.4f}",
+                str(self.mean_depth) if self.mean_depth else "",
+                self.method,
+                ";".join(self.warnings) if self.warnings else "",
+            ]
+        )
 
     @staticmethod
     def tsv_header() -> str:
@@ -112,14 +114,15 @@ class HaplogroupResult:
         Returns:
             Tab-separated header string
         """
-        return "\t".join([
-            "sample_id",
-            "haplogroup",
-            "confidence",
-            "quality",
-            "coverage",
-            "depth",
-            "method",
-            "warnings",
-        ])
-
+        return "\t".join(
+            [
+                "sample_id",
+                "haplogroup",
+                "confidence",
+                "quality",
+                "coverage",
+                "depth",
+                "method",
+                "warnings",
+            ]
+        )

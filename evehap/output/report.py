@@ -4,7 +4,7 @@ Stub module - to be implemented.
 """
 
 from dataclasses import dataclass
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from evehap.output.result import HaplogroupResult
@@ -65,4 +65,3 @@ class QCReport:
                     lines.append(f"  ! {warning}")
 
         return "\n".join(lines)
-

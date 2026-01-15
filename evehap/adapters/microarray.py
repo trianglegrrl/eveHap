@@ -13,7 +13,7 @@ File Formats:
 """
 
 from pathlib import Path
-from typing import Dict, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from evehap.adapters.base import InputAdapter
 from evehap.core.profile import AlleleObservation, AlleleProfile
@@ -64,7 +64,7 @@ class MicroarrayAdapter(InputAdapter):
             return None
 
         try:
-            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            with open(file_path, encoding="utf-8", errors="ignore") as f:
                 # Read first 20 lines to detect format
                 lines = []
                 for i, line in enumerate(f):
@@ -114,7 +114,7 @@ class MicroarrayAdapter(InputAdapter):
         self,
         file_path: str,
         damage_filter: Optional["DamageFilter"] = None,
-        **kwargs: object,
+        **kwargs: Any,
     ) -> AlleleProfile:
         """Extract profile from raw genotype file.
 
@@ -136,11 +136,14 @@ class MicroarrayAdapter(InputAdapter):
             raise FileNotFoundError(f"File not found: {file_path}")
 
         # Determine format
-        detected_format = self.format_type
+        detected_format: Optional[str] = self.format_type
         if detected_format == "auto":
             detected_format = self._detect_format(file_path)
             if detected_format is None:
                 raise ValueError(f"Cannot detect format of: {file_path}")
+
+        # At this point detected_format is guaranteed to be a valid string
+        assert detected_format is not None
 
         # Extract sample ID from filename
         sample_id = file_path_obj.stem
@@ -180,7 +183,7 @@ class MicroarrayAdapter(InputAdapter):
         """
         # Detect if file uses build 36 coordinates (older 23andMe files)
         is_build36 = False
-        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+        with open(file_path, encoding="utf-8", errors="ignore") as f:
             for line in f:
                 if "build 36" in line.lower() or "hg18" in line.lower():
                     is_build36 = True
@@ -188,7 +191,7 @@ class MicroarrayAdapter(InputAdapter):
                 if not line.startswith("#"):
                     break
 
-        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+        with open(file_path, encoding="utf-8", errors="ignore") as f:
             for line in f:
                 line = line.strip()
 
@@ -260,7 +263,7 @@ class MicroarrayAdapter(InputAdapter):
             file_path: Path to file
             profile: AlleleProfile to add observations to
         """
-        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+        with open(file_path, encoding="utf-8", errors="ignore") as f:
             for line in f:
                 line = line.strip()
 
@@ -312,4 +315,3 @@ class MicroarrayAdapter(InputAdapter):
                     source=self.format_name,
                 )
                 profile.add_observation(obs)
-
