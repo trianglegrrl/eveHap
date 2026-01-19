@@ -108,7 +108,7 @@ class TestMicroarrayAdapterExtractProfile:
 
     def test_extract_profile_23andme(self, sample_23andme: Path) -> None:
         """Test extracting profile from 23andMe format."""
-        adapter = MicroarrayAdapter(format_type="23andme")
+        adapter = MicroarrayAdapter(format_type="23andme", rsid_only=False)
 
         profile = adapter.extract_profile(str(sample_23andme))
 
@@ -133,7 +133,7 @@ class TestMicroarrayAdapterExtractProfile:
 
     def test_extract_profile_auto_detect(self, sample_23andme: Path) -> None:
         """Test auto-detection of format."""
-        adapter = MicroarrayAdapter(format_type="auto")
+        adapter = MicroarrayAdapter(format_type="auto", rsid_only=False)
 
         profile = adapter.extract_profile(str(sample_23andme))
 
@@ -149,7 +149,7 @@ class TestMicroarrayAdapterExtractProfile:
 
     def test_extract_profile_variants(self, sample_23andme: Path) -> None:
         """Test that variants are correctly extracted."""
-        adapter = MicroarrayAdapter(format_type="23andme")
+        adapter = MicroarrayAdapter(format_type="23andme", rsid_only=False)
 
         profile = adapter.extract_profile(str(sample_23andme))
 
