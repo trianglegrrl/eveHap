@@ -15,7 +15,7 @@ Usage:
 """
 
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
 import pytest
 
@@ -62,10 +62,7 @@ class TestAADRIntegration:
         if not tree_path.exists():
             pytest.skip("Phylotree not available")
 
-        return Phylotree.load(
-            str(tree_path),
-            str(weights_path) if weights_path.exists() else None
-        )
+        return Phylotree.load(str(tree_path), str(weights_path) if weights_path.exists() else None)
 
     @pytest.fixture
     def reference_path(self, evehap_data_dir: Path) -> str:
@@ -136,8 +133,10 @@ class TestAADRIntegration:
         if len(bams) < 3:
             pytest.skip("Need at least 3 valid BAM files")
 
-        print(f"\nTesting {len(bams)} samples" +
-              (f" (seed={random_seed})" if random_seed else " (sequential)"))
+        print(
+            f"\nTesting {len(bams)} samples"
+            + (f" (seed={random_seed})" if random_seed else " (sequential)")
+        )
 
         adapter = BAMAdapter(reference_path=reference_path)
         damage_filter = DamageFilter()
@@ -152,7 +151,7 @@ class TestAADRIntegration:
             try:
                 profile = adapter.extract_profile(str(bam))
                 result = classifier.classify(profile)
-                coverage = getattr(result, 'coverage_fraction', 0.0) or 0.0
+                coverage = getattr(result, "coverage_fraction", 0.0) or 0.0
                 results.append((sample_id, result.haplogroup, result.confidence, coverage))
 
             except Exception as e:
@@ -163,7 +162,7 @@ class TestAADRIntegration:
         if not results:
             pytest.skip("No samples could be classified")
 
-        print(f"\n=== AADR Classification Results ===")
+        print("\n=== AADR Classification Results ===")
         print(f"Total classified: {len(results)}")
         print(f"Errors: {errors}")
 
@@ -175,6 +174,7 @@ class TestAADRIntegration:
         # Haplogroup distribution
         clades = [get_major_clade(r[1]) for r in results]
         from collections import Counter
+
         clade_counts = Counter(clades)
         print("\nClade distribution:")
         for clade, count in clade_counts.most_common(10):
@@ -206,12 +206,9 @@ class TestAADRIntegration:
             sample_id = bam.stem.split(".")[0]
             try:
                 stats = damage_filter.estimate_damage(str(bam), max_reads=1000)
-                damage_results.append((
-                    sample_id,
-                    stats.ct_5prime_rate,
-                    stats.ga_3prime_rate,
-                    stats.is_ancient
-                ))
+                damage_results.append(
+                    (sample_id, stats.ct_5prime_rate, stats.ga_3prime_rate, stats.is_ancient)
+                )
             except Exception as e:
                 print(f"Error analyzing {sample_id}: {e}")
                 continue
@@ -250,10 +247,7 @@ class TestAADRBenchmark:
         if not tree_path.exists():
             pytest.skip("Phylotree not available")
 
-        return Phylotree.load(
-            str(tree_path),
-            str(weights_path) if weights_path.exists() else None
-        )
+        return Phylotree.load(str(tree_path), str(weights_path) if weights_path.exists() else None)
 
     @pytest.fixture
     def reference_path(self, evehap_data_dir: Path) -> str:
@@ -282,8 +276,10 @@ class TestAADRBenchmark:
         count = sample_count if sample_count != 10 else 50
         bams = select_samples(all_bams, count, random_seed)
 
-        print(f"\nBenchmarking {len(bams)} AADR samples" +
-              (f" (seed={random_seed})" if random_seed else ""))
+        print(
+            f"\nBenchmarking {len(bams)} AADR samples"
+            + (f" (seed={random_seed})" if random_seed else "")
+        )
 
         adapter = BAMAdapter(reference_path=reference_path)
         damage_filter = DamageFilter()
@@ -297,7 +293,7 @@ class TestAADRBenchmark:
             try:
                 profile = adapter.extract_profile(str(bam))
                 result = classifier.classify(profile)
-                coverage = getattr(result, 'coverage_fraction', 0.0) or 0.0
+                coverage = getattr(result, "coverage_fraction", 0.0) or 0.0
                 results.append((sample_id, result.haplogroup, result.confidence, coverage))
             except Exception:
                 errors += 1
@@ -310,18 +306,18 @@ class TestAADRBenchmark:
         avg_coverage = sum(r[3] for r in results) / len(results)
         clades = [get_major_clade(r[1]) for r in results]
         from collections import Counter
+
         clade_counts = Counter(clades)
 
-        print(f"\n=== AADR Benchmark Results ===")
+        print("\n=== AADR Benchmark Results ===")
         print(f"Total classified: {len(results)}")
         print(f"Errors: {errors}")
         print(f"Average confidence: {avg_confidence:.1%}")
         print(f"Average coverage: {avg_coverage:.1%}")
-        print(f"\nTop clades:")
+        print("\nTop clades:")
         for clade, count in clade_counts.most_common(10):
             print(f"  {clade}: {count} ({count/len(results):.1%})")
 
         # Success rate should be reasonable
         success_rate = len(results) / (len(results) + errors)
         assert success_rate >= 0.5, f"Success rate too low: {success_rate:.1%}"
-

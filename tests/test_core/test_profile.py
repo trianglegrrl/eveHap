@@ -1,6 +1,5 @@
 """Tests for evehap.core.profile module."""
 
-import pytest
 
 from evehap.core.profile import AlleleObservation, AlleleProfile
 
@@ -237,45 +236,41 @@ class TestAlleleProfile:
     def test_mean_depth_with_data(self) -> None:
         """Test mean_depth calculation."""
         profile = AlleleProfile(sample_id="test", source_format="bam")
-        profile.add_observation(AlleleObservation(
-            position=73, ref_allele="A", alleles={"G": 1.0}, depth=100
-        ))
-        profile.add_observation(AlleleObservation(
-            position=150, ref_allele="C", alleles={"T": 1.0}, depth=200
-        ))
-        profile.add_observation(AlleleObservation(
-            position=263, ref_allele="A", alleles={"G": 1.0}, depth=300
-        ))
+        profile.add_observation(
+            AlleleObservation(position=73, ref_allele="A", alleles={"G": 1.0}, depth=100)
+        )
+        profile.add_observation(
+            AlleleObservation(position=150, ref_allele="C", alleles={"T": 1.0}, depth=200)
+        )
+        profile.add_observation(
+            AlleleObservation(position=263, ref_allele="A", alleles={"G": 1.0}, depth=300)
+        )
 
         assert profile.mean_depth() == 200.0
 
     def test_mean_depth_with_missing_depth(self) -> None:
         """Test mean_depth skips observations without depth."""
         profile = AlleleProfile(sample_id="test", source_format="bam")
-        profile.add_observation(AlleleObservation(
-            position=73, ref_allele="A", alleles={"G": 1.0}, depth=100
-        ))
-        profile.add_observation(AlleleObservation(
-            position=150, ref_allele="C", alleles={"T": 1.0}, depth=None
-        ))
-        profile.add_observation(AlleleObservation(
-            position=263, ref_allele="A", alleles={"G": 1.0}, depth=200
-        ))
+        profile.add_observation(
+            AlleleObservation(position=73, ref_allele="A", alleles={"G": 1.0}, depth=100)
+        )
+        profile.add_observation(
+            AlleleObservation(position=150, ref_allele="C", alleles={"T": 1.0}, depth=None)
+        )
+        profile.add_observation(
+            AlleleObservation(position=263, ref_allele="A", alleles={"G": 1.0}, depth=200)
+        )
 
         assert profile.mean_depth() == 150.0
 
     def test_get_variants(self) -> None:
         """Test get_variants returns list of variants."""
         profile = AlleleProfile(sample_id="test", source_format="bam")
-        profile.add_observation(AlleleObservation(
-            position=73, ref_allele="A", alleles={"G": 1.0}
-        ))
-        profile.add_observation(AlleleObservation(
-            position=150, ref_allele="C", alleles={"C": 1.0}  # No variant
-        ))
-        profile.add_observation(AlleleObservation(
-            position=263, ref_allele="A", alleles={"G": 1.0}
-        ))
+        profile.add_observation(AlleleObservation(position=73, ref_allele="A", alleles={"G": 1.0}))
+        profile.add_observation(
+            AlleleObservation(position=150, ref_allele="C", alleles={"C": 1.0})  # No variant
+        )
+        profile.add_observation(AlleleObservation(position=263, ref_allele="A", alleles={"G": 1.0}))
 
         variants = profile.get_variants()
         assert len(variants) == 2
@@ -290,4 +285,3 @@ class TestAlleleProfile:
 
         assert profile.metadata["run_id"] == "ERR123456"
         assert profile.metadata["project"] == "AADR"
-

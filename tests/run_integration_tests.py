@@ -22,7 +22,6 @@ from typing import Dict, List, Optional, Tuple
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from evehap.adapters.bam import BAMAdapter
-from evehap.adapters.fasta import FASTAAdapter
 from evehap.adapters.vcf import VCFAdapter
 from evehap.core.classifier import Classifier
 from evehap.core.damage import DamageFilter
@@ -110,8 +109,10 @@ def test_1kg(
         return (0, 0, 0)
 
     sample_ids = select_samples(list(haplogroups.keys()), sample_count, random_seed)
-    print(f"Testing {len(sample_ids)} samples" +
-          (f" (seed={random_seed})" if random_seed else " (sequential)"))
+    print(
+        f"Testing {len(sample_ids)} samples"
+        + (f" (seed={random_seed})" if random_seed else " (sequential)")
+    )
 
     classifier = Classifier(phylotree)
 
@@ -176,8 +177,10 @@ def test_hgdp(
 
     bams = list(bam_dir.glob("*.bam"))
     bams = select_samples(bams, sample_count, random_seed)
-    print(f"Testing {len(bams)} samples" +
-          (f" (seed={random_seed})" if random_seed else " (sequential)"))
+    print(
+        f"Testing {len(bams)} samples"
+        + (f" (seed={random_seed})" if random_seed else " (sequential)")
+    )
 
     adapter = BAMAdapter(reference_path=reference_path)
     classifier = Classifier(phylotree)
@@ -243,8 +246,10 @@ def test_aadr(
     # Filter to non-empty BAMs
     bams = [b for b in bam_dir.glob("*.bam") if b.stat().st_size > 1000]
     bams = select_samples(bams, sample_count, random_seed)
-    print(f"Testing {len(bams)} samples" +
-          (f" (seed={random_seed})" if random_seed else " (sequential)"))
+    print(
+        f"Testing {len(bams)} samples"
+        + (f" (seed={random_seed})" if random_seed else " (sequential)")
+    )
 
     adapter = BAMAdapter(reference_path=reference_path)
     damage_filter = DamageFilter()
@@ -259,7 +264,7 @@ def test_aadr(
         try:
             profile = adapter.extract_profile(str(bam))
             result = classifier.classify(profile)
-            coverage = getattr(result, 'coverage_fraction', 0.0) or 0.0
+            coverage = getattr(result, "coverage_fraction", 0.0) or 0.0
             results.append((sample_id, result.haplogroup, result.confidence, coverage))
         except Exception as e:
             errors += 1
@@ -286,14 +291,16 @@ def test_aadr(
 
 def main():
     parser = argparse.ArgumentParser(description="Run eveHap integration tests")
-    parser.add_argument("--sample-count", type=int, default=10,
-                        help="Number of samples to test (default: 10)")
-    parser.add_argument("--random-seed", type=int, default=None,
-                        help="Random seed for sample selection")
-    parser.add_argument("--all-samples", action="store_true",
-                        help="Test all samples (slow)")
-    parser.add_argument("--dataset", choices=["all", "1kg", "hgdp", "aadr"],
-                        default="all", help="Dataset to test")
+    parser.add_argument(
+        "--sample-count", type=int, default=10, help="Number of samples to test (default: 10)"
+    )
+    parser.add_argument(
+        "--random-seed", type=int, default=None, help="Random seed for sample selection"
+    )
+    parser.add_argument("--all-samples", action="store_true", help="Test all samples (slow)")
+    parser.add_argument(
+        "--dataset", choices=["all", "1kg", "hgdp", "aadr"], default="all", help="Dataset to test"
+    )
     args = parser.parse_args()
 
     sample_count = -1 if args.all_samples else args.sample_count
@@ -354,4 +361,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

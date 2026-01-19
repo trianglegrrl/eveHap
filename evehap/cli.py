@@ -21,7 +21,7 @@ from evehap.core.phylotree import Phylotree
 from evehap.output.result import HaplogroupResult
 
 # Default data paths (relative to package)
-PACKAGE_DIR = Path(__file__).parent.parent
+PACKAGE_DIR = Path(__file__).parent
 DATA_DIR = PACKAGE_DIR / "data"
 
 # Tree type configurations

@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite both eveHap and Haplogrep 3."
+title: "eveHap: Universal mtDNA Haplogroup Classifier"
+type: software
+authors:
+  - name: "eveHap Contributors"
+url: "https://github.com/trianglegrrl/eveHap"
+doi: "10.5281/zenodo.18305868"
+license: MIT
+
+references:
+  - type: article
+    title: "Haplogrep 3 - an interactive haplogroup classification and analysis platform"
+    authors:
+      - family-names: Schönherr
+        given-names: Sebastian
+      - family-names: Weissensteiner
+        given-names: Hansi
+      - family-names: Kronenberg
+        given-names: Florian
+      - family-names: Forer
+        given-names: Lukas
+    journal: "Nucleic Acids Research"
+    year: 2023
+    doi: "10.1093/nar/gkad284"

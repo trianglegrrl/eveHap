@@ -86,9 +86,9 @@ class TestMicroarrayAdapterExtractProfile:
             f.write("rs123456\t1\t12345\tAA\n")
             f.write("rs789012\t2\t67890\tGC\n")
             # mtDNA SNPs
-            f.write("i3001997\tMT\t73\tG\n")      # A73G
-            f.write("i3001998\tMT\t263\tG\n")    # A263G
-            f.write("i3001999\tMT\t750\tG\n")    # A750G
+            f.write("i3001997\tMT\t73\tG\n")  # A73G
+            f.write("i3001998\tMT\t263\tG\n")  # A263G
+            f.write("i3001999\tMT\t750\tG\n")  # A750G
             f.write("i3002000\tMT\t16519\tC\n")  # T16519C
         return test_file
 
@@ -157,5 +157,3 @@ class TestMicroarrayAdapterExtractProfile:
         obs = profile.observations.get(73)
         assert obs is not None
         assert "G" in obs.alleles
-
-

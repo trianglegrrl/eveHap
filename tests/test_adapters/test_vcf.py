@@ -1,7 +1,6 @@
 """Tests for evehap.adapters.vcf module."""
 
 from pathlib import Path
-from typing import Optional
 
 import pytest
 
@@ -132,14 +131,9 @@ class TestVCFAdapterExtractProfile:
         profile2 = adapter2.extract_profile(str(onekg_vcf))
 
         # Different samples may have different variants
-        variants1 = set(
-            (v["position"], v["alt_allele"])
-            for v in profile1.get_variants()
-        )
-        variants2 = set(
-            (v["position"], v["alt_allele"])
-            for v in profile2.get_variants()
-        )
+        # get_variants() returns List[Tuple[int, str, str]] = (pos, ref, alt)
+        variants1 = set((pos, alt) for pos, ref, alt in profile1.get_variants())
+        variants2 = set((pos, alt) for pos, ref, alt in profile2.get_variants())
 
         # At least samples should have different IDs
         assert profile1.sample_id != profile2.sample_id
@@ -151,9 +145,7 @@ class TestVCFAdapterExtractProfile:
         with pytest.raises(FileNotFoundError):
             adapter.extract_profile("/nonexistent/file.vcf")
 
-    def test_extract_profile_sample_not_found(
-        self, onekg_vcf: Path, reference_fasta: Path
-    ) -> None:
+    def test_extract_profile_sample_not_found(self, onekg_vcf: Path, reference_fasta: Path) -> None:
         """Test ValueError for non-existent sample."""
         adapter = VCFAdapter(
             reference_path=str(reference_fasta),
@@ -206,5 +198,3 @@ class TestVCFAdapterMultiSample:
         assert len(samples) > 0
         assert "HG00096" in samples
         assert "HG00097" in samples
-
-

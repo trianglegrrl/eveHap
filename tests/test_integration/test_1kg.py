@@ -70,7 +70,7 @@ class Test1KGIntegration:
             pytest.skip("1000 Genomes haplogroups file not available")
 
         haplogroups = {}
-        with open(hg_file, "r") as f:
+        with open(hg_file) as f:
             reader = csv.DictReader(f)
             for row in reader:
                 sample_id = row.get("SampleID", "")
@@ -90,10 +90,7 @@ class Test1KGIntegration:
         if not tree_path.exists():
             pytest.skip("Phylotree not available")
 
-        return Phylotree.load(
-            str(tree_path),
-            str(weights_path) if weights_path.exists() else None
-        )
+        return Phylotree.load(str(tree_path), str(weights_path) if weights_path.exists() else None)
 
     @pytest.fixture
     def reference_path(self, evehap_data_dir: Path) -> str:
@@ -159,8 +156,10 @@ class Test1KGIntegration:
         all_sample_ids = list(haplogroups.keys())
         sample_ids = select_samples(all_sample_ids, sample_count, random_seed)
 
-        print(f"\nTesting {len(sample_ids)} samples" +
-              (f" (seed={random_seed})" if random_seed else " (sequential)"))
+        print(
+            f"\nTesting {len(sample_ids)} samples"
+            + (f" (seed={random_seed})" if random_seed else " (sequential)")
+        )
 
         classifier = Classifier(phylotree)
 
@@ -224,7 +223,7 @@ class Test1KGBenchmark:
             pytest.skip("1000 Genomes haplogroups file not available")
 
         haplogroups = {}
-        with open(hg_file, "r") as f:
+        with open(hg_file) as f:
             reader = csv.DictReader(f)
             for row in reader:
                 sample_id = row.get("SampleID", "")
@@ -243,10 +242,7 @@ class Test1KGBenchmark:
         if not tree_path.exists():
             pytest.skip("Phylotree not available")
 
-        return Phylotree.load(
-            str(tree_path),
-            str(weights_path) if weights_path.exists() else None
-        )
+        return Phylotree.load(str(tree_path), str(weights_path) if weights_path.exists() else None)
 
     @pytest.fixture
     def reference_path(self, evehap_data_dir: Path) -> str:
@@ -277,8 +273,10 @@ class Test1KGBenchmark:
         count = sample_count if sample_count != 10 else 100
         sample_ids = select_samples(all_sample_ids, count, random_seed)
 
-        print(f"\nBenchmarking {len(sample_ids)} samples" +
-              (f" (seed={random_seed})" if random_seed else ""))
+        print(
+            f"\nBenchmarking {len(sample_ids)} samples"
+            + (f" (seed={random_seed})" if random_seed else "")
+        )
 
         classifier = Classifier(phylotree)
 
@@ -316,7 +314,7 @@ class Test1KGBenchmark:
         exact_accuracy = exact_match / total
         clade_accuracy = clade_match / total
 
-        print(f"\n=== 1000 Genomes Benchmark Results ===")
+        print("\n=== 1000 Genomes Benchmark Results ===")
         print(f"Total samples: {total}")
         print(f"Exact matches: {exact_match} ({exact_accuracy:.1%})")
         print(f"Clade matches: {clade_match} ({clade_accuracy:.1%})")
@@ -324,4 +322,3 @@ class Test1KGBenchmark:
 
         # Minimum expected accuracy
         assert clade_accuracy >= 0.7, f"Clade accuracy {clade_accuracy:.1%} below 70%"
-

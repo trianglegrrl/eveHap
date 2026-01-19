@@ -13,17 +13,17 @@ Test strategy:
 3. Verify classification improves (or at least doesn't break) after filtering
 """
 
-import pytest
-from pathlib import Path
 import sys
+from pathlib import Path
+
+import pytest
 
 # Add project to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from evehap.core.damage import DamageFilter, DamageStats
-from evehap.core.profile import AlleleProfile, AlleleObservation
 from evehap.adapters.bam import BAMAdapter
-
+from evehap.core.damage import DamageFilter, DamageStats
+from evehap.core.profile import AlleleObservation, AlleleProfile
 
 # Fixtures directory
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
@@ -60,8 +60,7 @@ class TestDamageFilter:
         filt = DamageFilter(end_positions=3)
         # Position 0 in read (5' end), C→T
         assert filt.should_filter(
-            position=100, ref="C", alt="T",
-            read_position=0, read_length=50, is_reverse=False
+            position=100, ref="C", alt="T", read_position=0, read_length=50, is_reverse=False
         )
 
     def test_should_not_filter_ct_middle(self):
@@ -69,8 +68,7 @@ class TestDamageFilter:
         filt = DamageFilter(end_positions=3)
         # Position 25 in read (middle), C→T
         assert not filt.should_filter(
-            position=100, ref="C", alt="T",
-            read_position=25, read_length=50, is_reverse=False
+            position=100, ref="C", alt="T", read_position=25, read_length=50, is_reverse=False
         )
 
     def test_should_filter_ga_3prime(self):
@@ -78,8 +76,7 @@ class TestDamageFilter:
         filt = DamageFilter(end_positions=3)
         # Position 49 in 50bp read (3' end), G→A
         assert filt.should_filter(
-            position=100, ref="G", alt="A",
-            read_position=49, read_length=50, is_reverse=False
+            position=100, ref="G", alt="A", read_position=49, read_length=50, is_reverse=False
         )
 
     def test_should_not_filter_ga_5prime(self):
@@ -87,8 +84,7 @@ class TestDamageFilter:
         filt = DamageFilter(end_positions=3)
         # Position 0 in read (5' end), G→A
         assert not filt.should_filter(
-            position=100, ref="G", alt="A",
-            read_position=0, read_length=50, is_reverse=False
+            position=100, ref="G", alt="A", read_position=0, read_length=50, is_reverse=False
         )
 
     def test_should_filter_reverse_strand(self):
@@ -97,8 +93,7 @@ class TestDamageFilter:
         # On reverse strand, 3' end is at low read positions
         # Position 0 on reverse = 3' end
         assert filt.should_filter(
-            position=100, ref="G", alt="A",
-            read_position=0, read_length=50, is_reverse=True
+            position=100, ref="G", alt="A", read_position=0, read_length=50, is_reverse=True
         )
 
 
@@ -111,33 +106,22 @@ class TestDamageFilterProfile:
         profile = AlleleProfile(sample_id="test", source_format="test")
 
         # C→T variant at position 100 (should be removed)
-        obs1 = AlleleObservation(
-            position=100, depth=10, ref_allele="C",
-            alleles={"T": 1.0}
-        )
+        obs1 = AlleleObservation(position=100, depth=10, ref_allele="C", alleles={"T": 1.0})
         profile.add_observation(obs1)
 
         # G→A variant at position 200 (should be removed)
-        obs2 = AlleleObservation(
-            position=200, depth=10, ref_allele="G",
-            alleles={"A": 1.0}
-        )
+        obs2 = AlleleObservation(position=200, depth=10, ref_allele="G", alleles={"A": 1.0})
         profile.add_observation(obs2)
 
         # A→G variant at position 300 (should be kept)
-        obs3 = AlleleObservation(
-            position=300, depth=10, ref_allele="A",
-            alleles={"G": 1.0}
-        )
+        obs3 = AlleleObservation(position=300, depth=10, ref_allele="A", alleles={"G": 1.0})
         profile.add_observation(obs3)
 
         # Create a fake reference (just need positions 100, 200, 300)
         reference = "N" * 99 + "C" + "N" * 99 + "G" + "N" * 99 + "A" + "N" * 100
 
         filt = DamageFilter()
-        filtered = filt.filter_profile(
-            profile, remove_potential_damage=True, reference=reference
-        )
+        filtered = filt.filter_profile(profile, remove_potential_damage=True, reference=reference)
 
         # Should only have position 300 remaining
         assert len(filtered.observations) == 1
@@ -150,23 +134,15 @@ class TestDamageFilterProfile:
         profile = AlleleProfile(sample_id="test", source_format="test")
 
         # T variant
-        obs1 = AlleleObservation(
-            position=100, depth=10, ref_allele="N",
-            alleles={"T": 1.0}
-        )
+        obs1 = AlleleObservation(position=100, depth=10, ref_allele="N", alleles={"T": 1.0})
         profile.add_observation(obs1)
 
         # G variant (should be kept)
-        obs2 = AlleleObservation(
-            position=200, depth=10, ref_allele="N",
-            alleles={"G": 1.0}
-        )
+        obs2 = AlleleObservation(position=200, depth=10, ref_allele="N", alleles={"G": 1.0})
         profile.add_observation(obs2)
 
         filt = DamageFilter()
-        filtered = filt.filter_profile(
-            profile, remove_potential_damage=True, reference=None
-        )
+        filtered = filt.filter_profile(profile, remove_potential_damage=True, reference=None)
 
         # T variant should be removed, G should remain
         assert len(filtered.observations) == 1
@@ -178,34 +154,25 @@ class TestDamageFilterProfile:
 
         # Add 3 C→T variants
         for i in range(3):
-            obs = AlleleObservation(
-                position=100 + i, depth=10, ref_allele="C",
-                alleles={"T": 1.0}
-            )
+            obs = AlleleObservation(position=100 + i, depth=10, ref_allele="C", alleles={"T": 1.0})
             profile.add_observation(obs)
 
         # Add 1 A→G variant
-        obs = AlleleObservation(
-            position=200, depth=10, ref_allele="A",
-            alleles={"G": 1.0}
-        )
+        obs = AlleleObservation(position=200, depth=10, ref_allele="A", alleles={"G": 1.0})
         profile.add_observation(obs)
 
         reference = "N" * 99 + "CCC" + "N" * 97 + "A" + "N" * 100
 
         filt = DamageFilter()
-        filtered = filt.filter_profile(
-            profile, remove_potential_damage=True, reference=reference
-        )
+        filtered = filt.filter_profile(profile, remove_potential_damage=True, reference=reference)
 
-        assert filtered.metadata.get('damage_filtered') is True
-        assert filtered.metadata.get('damage_removed') == 3
-        assert filtered.metadata.get('original_variants') == 4
+        assert filtered.metadata.get("damage_filtered") is True
+        assert filtered.metadata.get("damage_removed") == 3
+        assert filtered.metadata.get("original_variants") == 4
 
 
 @pytest.mark.skipif(
-    not (FIXTURES_DIR / "ERR1341839.chrM.bam").exists(),
-    reason="Fixture BAM not available"
+    not (FIXTURES_DIR / "ERR1341839.chrM.bam").exists(), reason="Fixture BAM not available"
 )
 class TestDamageFilterWithRealData:
     """Test damage filtering with real AADR ancient DNA samples."""
@@ -239,17 +206,20 @@ class TestDamageFilterWithRealData:
         for pos, obs in profile.observations.items():
             if obs.is_variant and obs.major_allele:
                 total_variants += 1
-                if obs.major_allele == 'T':
+                if obs.major_allele == "T":
                     t_variants += 1
 
         print(f"Total variants: {total_variants}")
         print(f"T variants: {t_variants}")
-        print(f"T variant fraction: {t_variants/total_variants:.1%}" if total_variants > 0 else "N/A")
+        print(
+            f"T variant fraction: {t_variants/total_variants:.1%}" if total_variants > 0 else "N/A"
+        )
 
         # This sample should have high T variant fraction (damage)
         if total_variants > 5:
-            assert t_variants / total_variants > 0.5, \
-                f"Expected >50% T variants in damaged sample, got {t_variants}/{total_variants}"
+            assert (
+                t_variants / total_variants > 0.5
+            ), f"Expected >50% T variants in damaged sample, got {t_variants}/{total_variants}"
 
     def test_filter_reduces_variants(self):
         """Damage filtering should reduce variant count in damaged sample."""
@@ -269,9 +239,7 @@ class TestDamageFilterWithRealData:
 
         # Apply damage filter
         filt = DamageFilter()
-        filtered = filt.filter_profile(
-            profile, remove_potential_damage=True, reference=reference
-        )
+        filtered = filt.filter_profile(profile, remove_potential_damage=True, reference=reference)
 
         # Count variants after filtering
         after = sum(1 for obs in filtered.observations.values() if obs.is_variant)
@@ -288,4 +256,3 @@ class TestDamageFilterWithRealData:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
-

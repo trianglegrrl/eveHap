@@ -73,9 +73,7 @@ class TestFASTAAdapterExtractProfile:
             pytest.skip("No FASTA files found")
         return fastas[0]
 
-    def test_extract_profile_basic(
-        self, sample_fasta: Path, reference_fasta: Path
-    ) -> None:
+    def test_extract_profile_basic(self, sample_fasta: Path, reference_fasta: Path) -> None:
         """Test basic profile extraction from FASTA."""
         adapter = FASTAAdapter(reference_path=str(reference_fasta))
 
@@ -85,9 +83,7 @@ class TestFASTAAdapterExtractProfile:
         assert profile.source_format == "FASTA"
         assert len(profile.covered_positions) > 0
 
-    def test_extract_profile_sample_id(
-        self, sample_fasta: Path, reference_fasta: Path
-    ) -> None:
+    def test_extract_profile_sample_id(self, sample_fasta: Path, reference_fasta: Path) -> None:
         """Test that sample ID is extracted from FASTA header."""
         adapter = FASTAAdapter(reference_path=str(reference_fasta))
 
@@ -97,9 +93,7 @@ class TestFASTAAdapterExtractProfile:
         assert profile.sample_id is not None
         assert len(profile.sample_id) > 0
 
-    def test_extract_profile_coverage(
-        self, sample_fasta: Path, reference_fasta: Path
-    ) -> None:
+    def test_extract_profile_coverage(self, sample_fasta: Path, reference_fasta: Path) -> None:
         """Test that FASTA gives full mtDNA coverage."""
         adapter = FASTAAdapter(reference_path=str(reference_fasta))
 
@@ -109,9 +103,7 @@ class TestFASTAAdapterExtractProfile:
         coverage = profile.coverage_fraction()
         assert coverage > 0.95, f"Expected >95% coverage, got {coverage:.1%}"
 
-    def test_extract_profile_variants(
-        self, sample_fasta: Path, reference_fasta: Path
-    ) -> None:
+    def test_extract_profile_variants(self, sample_fasta: Path, reference_fasta: Path) -> None:
         """Test that variants are detected relative to reference."""
         adapter = FASTAAdapter(reference_path=str(reference_fasta))
 
@@ -171,9 +163,7 @@ class TestFASTAAdapterIUPAC:
             pytest.skip("Reference FASTA not available")
         return ref_path
 
-    def test_iupac_r_code(
-        self, reference_fasta: Path, tmp_path: Path
-    ) -> None:
+    def test_iupac_r_code(self, reference_fasta: Path, tmp_path: Path) -> None:
         """Test IUPAC R (A/G) code is converted to heteroplasmy."""
         # Create test FASTA with R at position 73 (rCRS is A at 73)
         test_fasta = tmp_path / "test.fasta"
@@ -200,12 +190,11 @@ class TestFASTAAdapterIUPAC:
         # Position 73 should have A and G
         obs = profile.observations.get(73)
         assert obs is not None, "Position 73 should be covered"
-        assert "A" in obs.alleles or "G" in obs.alleles, \
-            f"Expected A and/or G at position 73, got {obs.alleles}"
+        assert (
+            "A" in obs.alleles or "G" in obs.alleles
+        ), f"Expected A and/or G at position 73, got {obs.alleles}"
 
-    def test_iupac_n_code(
-        self, reference_fasta: Path, tmp_path: Path
-    ) -> None:
+    def test_iupac_n_code(self, reference_fasta: Path, tmp_path: Path) -> None:
         """Test IUPAC N (any base) code is handled as missing."""
         test_fasta = tmp_path / "test.fasta"
 
@@ -231,5 +220,3 @@ class TestFASTAAdapterIUPAC:
         # Either not present or marked as unknown
         if obs is not None:
             assert obs.alleles.get("N", 0) > 0 or len(obs.alleles) == 0
-
-

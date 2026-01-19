@@ -70,3 +70,6 @@ Thumbs.db
 *.whl
 *.tar.gz
 .cursor/
+
+# Claude Code
+CLAUDE.md

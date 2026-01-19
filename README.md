@@ -2,7 +2,9 @@
 
 **Universal mtDNA Haplogroup Classifier**
 
-eveHap is a Python tool for classifying mitochondrial DNA (mtDNA) haplogroups from various input formats. It supports modern high-coverage sequencing data as well as ancient DNA with damage filtering.
+eveHap is a Python implementation of mtDNA haplogroup classification, inspired by and building upon 
+[Haplogrep 3](https://haplogrep.readthedocs.io/). It brings haplogroup classification into the Python 
+ecosystem with support for modern high-coverage sequencing data as well as ancient DNA with damage filtering.
 
 ## Features
 
@@ -459,11 +461,20 @@ MIT License
 
 ## Citation
 
-If you use eveHap in your research, please cite:
+If you use eveHap in your research, please cite both eveHap and the foundational Haplogrep 3 work:
 
-```
-eveHap: Universal mtDNA Haplogroup Classifier
-https://github.com/trianglegrrl/eveHap
-```
+**Haplogrep 3** (classification methodology and phylotree data):
+> Schönherr S, Weissensteiner H, Kronenberg F, Forer L. Haplogrep 3 - an interactive 
+> haplogroup classification and analysis platform. Nucleic Acids Res. 2023. 
+> https://doi.org/10.1093/nar/gkad284
 
+**eveHap** (this implementation):
+> eveHap: Universal mtDNA Haplogroup Classifier
+> https://doi.org/10.5281/zenodo.18305868
+
+## Acknowledgments
+
+eveHap implements haplogroup classification algorithms originally developed by the Haplogrep team 
+at the Medical University of Innsbruck. We are grateful for their foundational work in making 
+mtDNA haplogroup classification accessible and rigorous.
 

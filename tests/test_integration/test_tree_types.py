@@ -10,7 +10,6 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Optional
 
 import pytest
 
@@ -20,10 +19,7 @@ HGDP_BAM_DIR = "/home/a/mtdna_poc/data/hgdp/bams"
 HAPLOGREP3_CMD = "/home/a/anaconda3/envs/haplogrep3/bin/haplogrep3"
 
 # Skip if test data not available
-pytestmark = pytest.mark.skipif(
-    not Path(VCF_PATH).exists(),
-    reason="Test data not available"
-)
+pytestmark = pytest.mark.skipif(not Path(VCF_PATH).exists(), reason="Test data not available")
 
 
 def run_haplogrep3(variants: list, tree_type: str) -> str:
@@ -42,26 +38,34 @@ def run_haplogrep3(variants: list, tree_type: str) -> str:
         "rsrs": "phylotree-rsrs@17.1",
     }[tree_type]
 
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.hsd', delete=False) as f:
-        hsd_line = f"sample\t1-16569\t?\t" + "\t".join(variants)
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".hsd", delete=False) as f:
+        hsd_line = "sample\t1-16569\t?\t" + "\t".join(variants)
         f.write(hsd_line + "\n")
         hsd_path = f.name
 
-    result_path = hsd_path.replace('.hsd', '.txt')
+    result_path = hsd_path.replace(".hsd", ".txt")
 
     try:
-        subprocess.run([
-            HAPLOGREP3_CMD,
-            "classify",
-            "--tree", hp3_tree,
-            "--input", hsd_path,
-            "--output", result_path,
-        ], capture_output=True, text=True, check=True)
+        subprocess.run(
+            [
+                HAPLOGREP3_CMD,
+                "classify",
+                "--tree",
+                hp3_tree,
+                "--input",
+                hsd_path,
+                "--output",
+                result_path,
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
 
         with open(result_path) as f:
             lines = f.readlines()
             if len(lines) > 1:
-                parts = lines[1].strip().replace('"', '').split('\t')
+                parts = lines[1].strip().replace('"', "").split("\t")
                 return parts[1] if len(parts) > 1 else "?"
     except Exception:
         return "error"
@@ -80,13 +84,15 @@ class TestVCFWithTreeTypes:
     def evehap_classify(self):
         """Return function to classify a sample using evehap."""
         import sys
+
         sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
         import pysam
+
         from evehap.adapters.vcf import VCFAdapter
-        from evehap.core.phylotree import Phylotree
-        from evehap.core.classifier import Classifier
         from evehap.cli import TREE_TYPES
+        from evehap.core.classifier import Classifier
+        from evehap.core.phylotree import Phylotree
 
         def classify(sample_id: str, tree_type: str) -> tuple:
             """Classify sample and return (haplogroup, variants)."""
@@ -129,8 +135,9 @@ class TestVCFWithTreeTypes:
             evehap_hg, variants = evehap_classify(sample_id, "rcrs")
             hp3_hg = run_haplogrep3(variants, "rcrs")
 
-            assert evehap_hg == hp3_hg, \
-                f"Sample {sample_id}: evehap={evehap_hg}, haplogrep3={hp3_hg}"
+            assert (
+                evehap_hg == hp3_hg
+            ), f"Sample {sample_id}: evehap={evehap_hg}, haplogrep3={hp3_hg}"
 
     @pytest.mark.integration
     def test_vcf_rsrs_works(self, evehap_classify):
@@ -153,13 +160,15 @@ class TestBAMWithTreeTypes:
     def evehap_classify_bam(self):
         """Return function to classify a BAM file using evehap."""
         import sys
+
         sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
         import pysam
+
         from evehap.adapters.bam import BAMAdapter
-        from evehap.core.phylotree import Phylotree
-        from evehap.core.classifier import Classifier
         from evehap.cli import TREE_TYPES
+        from evehap.core.classifier import Classifier
+        from evehap.core.phylotree import Phylotree
 
         def classify(bam_path: str, tree_type: str) -> str:
             """Classify BAM file and return haplogroup."""
@@ -184,10 +193,7 @@ class TestBAMWithTreeTypes:
         return classify
 
     @pytest.mark.integration
-    @pytest.mark.skipif(
-        not Path(HGDP_BAM_DIR).exists(),
-        reason="HGDP BAM files not available"
-    )
+    @pytest.mark.skipif(not Path(HGDP_BAM_DIR).exists(), reason="HGDP BAM files not available")
     def test_bam_rcrs_works(self, evehap_classify_bam):
         """Test BAM with rCRS tree produces valid results."""
         import glob
@@ -202,10 +208,7 @@ class TestBAMWithTreeTypes:
             assert len(evehap_hg) > 0
 
     @pytest.mark.integration
-    @pytest.mark.skipif(
-        not Path(HGDP_BAM_DIR).exists(),
-        reason="HGDP BAM files not available"
-    )
+    @pytest.mark.skipif(not Path(HGDP_BAM_DIR).exists(), reason="HGDP BAM files not available")
     def test_bam_rsrs_works(self, evehap_classify_bam):
         """Test BAM with RSRS tree produces valid results."""
         import glob
@@ -227,13 +230,15 @@ class TestTreeTypeConsistency:
     def classify_both(self):
         """Return function to classify with both tree types."""
         import sys
+
         sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
         import pysam
+
         from evehap.adapters.vcf import VCFAdapter
-        from evehap.core.phylotree import Phylotree
-        from evehap.core.classifier import Classifier
         from evehap.cli import TREE_TYPES
+        from evehap.core.classifier import Classifier
+        from evehap.core.phylotree import Phylotree
 
         def classify(sample_id: str) -> dict:
             """Classify with both tree types."""
@@ -272,6 +277,6 @@ class TestTreeTypeConsistency:
         results = classify_both(sample_id)
 
         # Both should start with 'H' for this sample
-        assert results["rcrs"][0] == results["rsrs"][0], \
-            f"Major clade mismatch: rcrs={results['rcrs']}, rsrs={results['rsrs']}"
-
+        assert (
+            results["rcrs"][0] == results["rsrs"][0]
+        ), f"Major clade mismatch: rcrs={results['rcrs']}, rsrs={results['rsrs']}"

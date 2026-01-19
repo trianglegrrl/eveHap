@@ -6,7 +6,7 @@ TDD: Red phase - these tests should FAIL until we implement --tree-type.
 import pytest
 from click.testing import CliRunner
 
-from evehap.cli import main, classify
+from evehap.cli import classify
 
 
 class TestTreeTypeOption:
@@ -130,4 +130,3 @@ class TestTreeTypeIntegration:
     def test_bam_with_rsrs_tree(self, runner):
         """Test BAM classification with RSRS tree."""
         pass
-

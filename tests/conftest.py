@@ -1,9 +1,8 @@
 """Pytest configuration and fixtures for eveHap tests."""
 
-import os
 import random
 from pathlib import Path
-from typing import Generator, List
+from typing import List
 
 import pytest
 
@@ -145,4 +144,3 @@ def temp_output_dir(tmp_path: Path) -> Path:
     output_dir = tmp_path / "output"
     output_dir.mkdir(exist_ok=True)
     return output_dir
-

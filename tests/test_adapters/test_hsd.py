@@ -101,9 +101,7 @@ class TestHSDAdapterExtractProfile:
             pytest.skip("Reference FASTA not available")
         return ref_path
 
-    def test_extract_profile_basic(
-        self, haplogrep_hsd: Path, reference_fasta: Path
-    ) -> None:
+    def test_extract_profile_basic(self, haplogrep_hsd: Path, reference_fasta: Path) -> None:
         """Test basic profile extraction from HSD."""
         adapter = HSDAdapter(reference_path=str(reference_fasta))
 
@@ -114,9 +112,7 @@ class TestHSDAdapterExtractProfile:
         # HSD only contains variants, so covered positions are variant positions
         assert len(profile.covered_positions) > 0
 
-    def test_extract_profile_sample_id(
-        self, haplogrep_hsd: Path, reference_fasta: Path
-    ) -> None:
+    def test_extract_profile_sample_id(self, haplogrep_hsd: Path, reference_fasta: Path) -> None:
         """Test that sample ID is extracted from HSD."""
         adapter = HSDAdapter(reference_path=str(reference_fasta))
 
@@ -137,9 +133,7 @@ class TestHSDAdapterExtractProfile:
 
         assert profile.sample_id == "Africa01"
 
-    def test_extract_profile_variants(
-        self, haplogrep_hsd: Path, reference_fasta: Path
-    ) -> None:
+    def test_extract_profile_variants(self, haplogrep_hsd: Path, reference_fasta: Path) -> None:
         """Test that variants are correctly extracted."""
         adapter = HSDAdapter(reference_path=str(reference_fasta))
 
@@ -165,9 +159,7 @@ class TestHSDAdapterExtractProfile:
         with pytest.raises(ValueError, match="Sample .* not found"):
             adapter.extract_profile(str(haplogrep_hsd), sample_id="NONEXISTENT")
 
-    def test_list_samples(
-        self, haplogrep_hsd: Path, reference_fasta: Path
-    ) -> None:
+    def test_list_samples(self, haplogrep_hsd: Path, reference_fasta: Path) -> None:
         """Test listing samples in HSD file."""
         adapter = HSDAdapter(reference_path=str(reference_fasta))
 
@@ -209,5 +201,3 @@ class TestHSDAdapterWithReference:
         obs = profile.observations.get(73)
         assert obs is not None
         assert "G" in obs.alleles
-
-

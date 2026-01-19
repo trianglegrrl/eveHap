@@ -8,7 +8,7 @@ Usage:
 """
 
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict
 
 import pytest
 
@@ -44,10 +44,7 @@ class TestMultiFormatConsistency:
         if not tree_path.exists():
             pytest.skip("Phylotree not available")
 
-        return Phylotree.load(
-            str(tree_path),
-            str(weights_path) if weights_path.exists() else None
-        )
+        return Phylotree.load(str(tree_path), str(weights_path) if weights_path.exists() else None)
 
     @pytest.fixture
     def reference_path(self, evehap_data_dir: Path) -> str:
@@ -200,7 +197,9 @@ class TestMultiFormatConsistency:
                 else:
                     status = "✗ DIFFER"
 
-                print(f"  {sample_id}: FASTA={fasta_result.haplogroup}, BAM={bam_result.haplogroup} [{status}]")
+                print(
+                    f"  {sample_id}: FASTA={fasta_result.haplogroup}, BAM={bam_result.haplogroup} [{status}]"
+                )
 
             except Exception as e:
                 print(f"  {sample_id}: ERROR - {e}")
@@ -227,10 +226,7 @@ class TestHGDPMultiFormat:
         if not tree_path.exists():
             pytest.skip("Phylotree not available")
 
-        return Phylotree.load(
-            str(tree_path),
-            str(weights_path) if weights_path.exists() else None
-        )
+        return Phylotree.load(str(tree_path), str(weights_path) if weights_path.exists() else None)
 
     @pytest.fixture
     def reference_path(self, evehap_data_dir: Path) -> str:
@@ -250,7 +246,7 @@ class TestHGDPMultiFormat:
             pytest.skip("HGDP haplogroups file not available")
 
         haplogroups = {}
-        with open(hg_file, "r") as f:
+        with open(hg_file) as f:
             reader = csv.DictReader(f)
             for row in reader:
                 sample_id = row.get("sample_id", row.get("Sample", ""))
@@ -323,4 +319,3 @@ class TestHGDPMultiFormat:
         print(f"\nClade accuracy: {accuracy:.1%} ({clade_correct}/{total})")
 
         assert accuracy >= 0.7, f"FASTA accuracy too low: {accuracy:.1%}"
-

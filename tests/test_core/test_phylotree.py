@@ -41,18 +41,14 @@ class TestMutation:
         """Test matches returns True when mutation is present."""
         mut = Mutation(position=73, ancestral="A", derived="G")
         profile = AlleleProfile(sample_id="test", source_format="bam")
-        profile.add_observation(AlleleObservation(
-            position=73, ref_allele="A", alleles={"G": 1.0}
-        ))
+        profile.add_observation(AlleleObservation(position=73, ref_allele="A", alleles={"G": 1.0}))
         assert mut.matches(profile) is True
 
     def test_matches_absent(self) -> None:
         """Test matches returns False when mutation is absent."""
         mut = Mutation(position=73, ancestral="A", derived="G")
         profile = AlleleProfile(sample_id="test", source_format="bam")
-        profile.add_observation(AlleleObservation(
-            position=73, ref_allele="A", alleles={"A": 1.0}
-        ))
+        profile.add_observation(AlleleObservation(position=73, ref_allele="A", alleles={"A": 1.0}))
         assert mut.matches(profile) is False
 
     def test_matches_not_covered(self) -> None:
@@ -253,4 +249,3 @@ class TestPhylotreeLoad:
             for mut in mutations:
                 # Most mutations should have weight > 0
                 assert mut.weight >= 0
-

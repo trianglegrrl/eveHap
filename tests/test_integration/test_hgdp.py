@@ -65,7 +65,7 @@ class TestHGDPIntegration:
             pytest.skip("HGDP haplogroups file not available")
 
         haplogroups = {}
-        with open(hg_file, "r") as f:
+        with open(hg_file) as f:
             reader = csv.DictReader(f)
             for row in reader:
                 sample_id = row.get("sample_id", row.get("Sample", ""))
@@ -84,10 +84,7 @@ class TestHGDPIntegration:
         if not tree_path.exists():
             pytest.skip("Phylotree not available")
 
-        return Phylotree.load(
-            str(tree_path),
-            str(weights_path) if weights_path.exists() else None
-        )
+        return Phylotree.load(str(tree_path), str(weights_path) if weights_path.exists() else None)
 
     def test_hgdp_sample_count(self, hgdp_bam_dir: Path) -> None:
         """Test that we have HGDP BAM files."""
@@ -157,8 +154,10 @@ class TestHGDPIntegration:
         if len(bams) < 3:
             pytest.skip("Need at least 3 BAM files")
 
-        print(f"\nTesting {len(bams)} samples" +
-              (f" (seed={random_seed})" if random_seed else " (sequential)"))
+        print(
+            f"\nTesting {len(bams)} samples"
+            + (f" (seed={random_seed})" if random_seed else " (sequential)")
+        )
 
         adapter = BAMAdapter()
         classifier = Classifier(phylotree)
@@ -226,7 +225,7 @@ class TestHGDPBenchmark:
             pytest.skip("HGDP haplogroups file not available")
 
         haplogroups = {}
-        with open(hg_file, "r") as f:
+        with open(hg_file) as f:
             reader = csv.DictReader(f)
             for row in reader:
                 sample_id = row.get("sample_id", row.get("Sample", ""))
@@ -245,10 +244,7 @@ class TestHGDPBenchmark:
         if not tree_path.exists():
             pytest.skip("Phylotree not available")
 
-        return Phylotree.load(
-            str(tree_path),
-            str(weights_path) if weights_path.exists() else None
-        )
+        return Phylotree.load(str(tree_path), str(weights_path) if weights_path.exists() else None)
 
     @pytest.mark.slow
     def test_full_hgdp_benchmark(
@@ -270,8 +266,10 @@ class TestHGDPBenchmark:
         count = sample_count if sample_count != 10 else -1
         bams = select_samples(all_bams, count, random_seed)
 
-        print(f"\nBenchmarking {len(bams)} HGDP samples" +
-              (f" (seed={random_seed})" if random_seed else ""))
+        print(
+            f"\nBenchmarking {len(bams)} HGDP samples"
+            + (f" (seed={random_seed})" if random_seed else "")
+        )
 
         adapter = BAMAdapter()
         classifier = Classifier(phylotree)
@@ -313,7 +311,7 @@ class TestHGDPBenchmark:
         exact_accuracy = exact_match / total
         clade_accuracy = clade_match / total
 
-        print(f"\n=== HGDP Benchmark Results ===")
+        print("\n=== HGDP Benchmark Results ===")
         print(f"Total samples: {total}")
         print(f"Exact matches: {exact_match} ({exact_accuracy:.1%})")
         print(f"Clade matches: {clade_match} ({clade_accuracy:.1%})")
@@ -321,5 +319,3 @@ class TestHGDPBenchmark:
 
         # Minimum expected accuracy
         assert clade_accuracy >= 0.6, f"Clade accuracy {clade_accuracy:.1%} below 60%"
-
-

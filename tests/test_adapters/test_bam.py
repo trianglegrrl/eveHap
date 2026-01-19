@@ -97,7 +97,7 @@ class TestBAMAdapterExtractProfile:
         expected_id = sample_bam.stem
         for suffix in [".chrM", ".MT", ".chrMT", ".mito"]:
             if expected_id.endswith(suffix):
-                expected_id = expected_id[:-len(suffix)]
+                expected_id = expected_id[: -len(suffix)]
                 break
         assert profile.sample_id == expected_id
         assert profile.source_format == "BAM"
@@ -122,10 +122,7 @@ class TestBAMAdapterExtractProfile:
         profile = adapter.extract_profile(str(sample_bam))
 
         # At least some observations should have depth
-        depths = [
-            obs.depth for obs in profile.observations.values()
-            if obs.depth is not None
-        ]
+        depths = [obs.depth for obs in profile.observations.values() if obs.depth is not None]
         assert len(depths) > 0, "No observations have depth"
         assert all(d > 0 for d in depths), "Depths should be positive"
 
@@ -224,12 +221,13 @@ class TestBAMAdapterExtractProfile:
     @pytest.mark.integration
     @pytest.mark.skipif(
         not (Path(__file__).parent / "fixtures" / "ERR1341839.chrM.bam").exists(),
-        reason="AADR fixture BAM not available"
+        reason="AADR fixture BAM not available",
     )
     def test_damage_filter_with_aadr_sample(self) -> None:
         """Test damage filtering with real AADR ancient DNA sample."""
-        from evehap.core.damage import DamageFilter
         from pathlib import Path
+
+        from evehap.core.damage import DamageFilter
 
         bam_path = Path(__file__).parent / "fixtures" / "ERR1341839.chrM.bam"
         ref_path = Path(__file__).parent.parent.parent / "data" / "reference" / "rCRS.fasta"
@@ -249,8 +247,12 @@ class TestBAMAdapterExtractProfile:
         )
 
         # Count variants before and after
-        variants_before = sum(1 for obs in profile_no_filter.observations.values() if obs.is_variant)
-        variants_after = sum(1 for obs in profile_with_filter.observations.values() if obs.is_variant)
+        variants_before = sum(
+            1 for obs in profile_no_filter.observations.values() if obs.is_variant
+        )
+        variants_after = sum(
+            1 for obs in profile_with_filter.observations.values() if obs.is_variant
+        )
 
         # Damage filtering should reduce variant count (filters C→T and G→A at ends)
         # But may not always if damage is not at read ends
@@ -345,7 +347,9 @@ class TestBAMAdapterExtractProfile:
         profile_adaptive = adapter_adaptive.extract_profile(str(sample_bam))
 
         # Extract with fixed quality thresholds
-        adapter_fixed = BAMAdapter(adaptive_quality=False, min_base_quality=20, min_mapping_quality=20)
+        adapter_fixed = BAMAdapter(
+            adaptive_quality=False, min_base_quality=20, min_mapping_quality=20
+        )
         profile_fixed = adapter_fixed.extract_profile(str(sample_bam))
 
         # Both should produce valid profiles
@@ -399,5 +403,7 @@ class TestBAMAdapterExtractProfile:
 
         # Longer filter may have fewer positions (more bases excluded)
         # But not always, depends on read lengths
-        assert len(profile_len5.covered_positions) <= len(profile_len1.covered_positions) or len(profile_len1.covered_positions) == 0
-
+        assert (
+            len(profile_len5.covered_positions) <= len(profile_len1.covered_positions)
+            or len(profile_len1.covered_positions) == 0
+        )

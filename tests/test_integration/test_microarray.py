@@ -25,8 +25,7 @@ REAL_23ANDME_FILES = [
 
 # Skip if test data not available
 pytestmark = pytest.mark.skipif(
-    not Path(VCF_PATH).exists(),
-    reason="1KG VCF test data not available"
+    not Path(VCF_PATH).exists(), reason="1KG VCF test data not available"
 )
 
 
@@ -37,13 +36,14 @@ class TestMicroarrayRoundTrip:
     def vcf_classifier(self):
         """Create classifier for VCF data."""
         import sys
+
         sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
         import pysam
-        from evehap.adapters.vcf import VCFAdapter
-        from evehap.core.phylotree import Phylotree
-        from evehap.core.classifier import Classifier
+
         from evehap.cli import TREE_TYPES
+        from evehap.core.classifier import Classifier
+        from evehap.core.phylotree import Phylotree
 
         tree_type = "rcrs"
         config = TREE_TYPES[tree_type]
@@ -61,9 +61,10 @@ class TestMicroarrayRoundTrip:
     def generate_23andme(self):
         """Return function to generate 23andMe file from VCF sample."""
         import sys
+
         sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
 
-        from generate_23andme_from_vcf import vcf_to_23andme, write_23andme_file, load_rsid_lookup
+        from generate_23andme_from_vcf import load_rsid_lookup, vcf_to_23andme
 
         rsid_lookup = {}
         if RSID_LOOKUP_PATH.exists():
@@ -73,8 +74,8 @@ class TestMicroarrayRoundTrip:
             """Generate 23andMe file and return path."""
             lines = vcf_to_23andme(VCF_PATH, sample_id, rsid_lookup)
 
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
-                f.write('\n'.join(lines) + '\n')
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+                f.write("\n".join(lines) + "\n")
                 return f.name
 
         return generate
@@ -82,8 +83,8 @@ class TestMicroarrayRoundTrip:
     @pytest.mark.integration
     def test_single_sample_round_trip(self, vcf_classifier, generate_23andme):
         """Test round-trip accuracy for a single sample."""
-        from evehap.adapters.vcf import VCFAdapter
         from evehap.adapters.microarray import MicroarrayAdapter
+        from evehap.adapters.vcf import VCFAdapter
 
         classifier, config, reference = vcf_classifier
         sample_id = "HG00096"
@@ -104,16 +105,17 @@ class TestMicroarrayRoundTrip:
             ma_profile.assumes_full_coverage = True
             ma_result = classifier.classify(ma_profile)
 
-            assert vcf_result.haplogroup == ma_result.haplogroup, \
-                f"Round-trip mismatch for {sample_id}: VCF={vcf_result.haplogroup}, 23andMe={ma_result.haplogroup}"
+            assert (
+                vcf_result.haplogroup == ma_result.haplogroup
+            ), f"Round-trip mismatch for {sample_id}: VCF={vcf_result.haplogroup}, 23andMe={ma_result.haplogroup}"
         finally:
             os.unlink(ma_path)
 
     @pytest.mark.integration
     def test_multiple_samples_round_trip(self, vcf_classifier, generate_23andme):
         """Test round-trip accuracy for multiple samples."""
-        from evehap.adapters.vcf import VCFAdapter
         from evehap.adapters.microarray import MicroarrayAdapter
+        from evehap.adapters.vcf import VCFAdapter
 
         classifier, config, reference = vcf_classifier
         samples = ["HG00096", "HG00097", "HG00099"]
@@ -135,8 +137,9 @@ class TestMicroarrayRoundTrip:
                 ma_profile.assumes_full_coverage = True
                 ma_result = classifier.classify(ma_profile)
 
-                assert vcf_result.haplogroup == ma_result.haplogroup, \
-                    f"Round-trip mismatch for {sample_id}: VCF={vcf_result.haplogroup}, 23andMe={ma_result.haplogroup}"
+                assert (
+                    vcf_result.haplogroup == ma_result.haplogroup
+                ), f"Round-trip mismatch for {sample_id}: VCF={vcf_result.haplogroup}, 23andMe={ma_result.haplogroup}"
             finally:
                 os.unlink(ma_path)
 
@@ -165,6 +168,7 @@ rs3937033	MT	16519	C
     def test_parse_23andme_format(self, sample_23andme_file):
         """Test parsing 23andMe format file."""
         import sys
+
         sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
         from evehap.adapters.microarray import MicroarrayAdapter
@@ -181,6 +185,7 @@ rs3937033	MT	16519	C
     def test_detect_format(self, sample_23andme_file):
         """Test format detection for 23andMe files."""
         import sys
+
         sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
         from evehap.adapters.microarray import MicroarrayAdapter
@@ -202,12 +207,14 @@ class TestReal23andMeFiles:
     def classifier_rcrs(self):
         """Create rCRS classifier."""
         import sys
+
         sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
         import pysam
-        from evehap.core.phylotree import Phylotree
-        from evehap.core.classifier import Classifier
+
         from evehap.cli import TREE_TYPES
+        from evehap.core.classifier import Classifier
+        from evehap.core.phylotree import Phylotree
 
         config = TREE_TYPES["rcrs"]
 
@@ -223,7 +230,7 @@ class TestReal23andMeFiles:
     @pytest.mark.integration
     @pytest.mark.skipif(
         not all(f.exists() for f in REAL_23ANDME_FILES),
-        reason="Real 23andMe test files not available"
+        reason="Real 23andMe test files not available",
     )
     def test_real_23andme_files_classify(self, classifier_rcrs):
         """Test that real 23andMe files can be classified."""
@@ -252,13 +259,14 @@ class TestReal23andMeFiles:
     @pytest.mark.integration
     @pytest.mark.skipif(
         not all(f.exists() for f in REAL_23ANDME_FILES),
-        reason="Real 23andMe test files not available"
+        reason="Real 23andMe test files not available",
     )
     def test_real_23andme_matches_haplogrep3(self, classifier_rcrs):
         """Test that real 23andMe classification matches Haplogrep3."""
-        import subprocess
         import tempfile
+
         import pysam
+
         from evehap.adapters.microarray import MicroarrayAdapter
         from evehap.cli import TREE_TYPES
 
@@ -285,31 +293,38 @@ class TestReal23andMeFiles:
                         variants.append(f"{pos}{obs.major_allele}")
 
             # Run Haplogrep3
-            hsd_line = f"sample\t1-16569\t?\t" + "\t".join(variants)
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.hsd', delete=False) as f:
+            hsd_line = "sample\t1-16569\t?\t" + "\t".join(variants)
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".hsd", delete=False) as f:
                 f.write(hsd_line + "\n")
                 hsd_path = f.name
 
-            result_path = hsd_path.replace('.hsd', '.txt')
+            result_path = hsd_path.replace(".hsd", ".txt")
             try:
-                subprocess.run([
-                    "/home/a/anaconda3/envs/haplogrep3/bin/haplogrep3",
-                    "classify",
-                    "--tree", "phylotree-fu-rcrs@1.2",
-                    "--input", hsd_path,
-                    "--output", result_path,
-                ], capture_output=True, check=True)
+                subprocess.run(
+                    [
+                        "/home/a/anaconda3/envs/haplogrep3/bin/haplogrep3",
+                        "classify",
+                        "--tree",
+                        "phylotree-fu-rcrs@1.2",
+                        "--input",
+                        hsd_path,
+                        "--output",
+                        result_path,
+                    ],
+                    capture_output=True,
+                    check=True,
+                )
 
                 with open(result_path) as f:
                     lines = f.readlines()
                     if len(lines) > 1:
-                        hp3_hg = lines[1].strip().replace('"', '').split('\t')[1]
+                        hp3_hg = lines[1].strip().replace('"', "").split("\t")[1]
 
                         # Should match Haplogrep3
-                        assert result.haplogroup == hp3_hg, \
-                            f"Mismatch for {file_path.name}: evehap={result.haplogroup}, haplogrep3={hp3_hg}"
+                        assert (
+                            result.haplogroup == hp3_hg
+                        ), f"Mismatch for {file_path.name}: evehap={result.haplogroup}, haplogrep3={hp3_hg}"
             finally:
                 os.unlink(hsd_path)
                 if os.path.exists(result_path):
                     os.unlink(result_path)
-
