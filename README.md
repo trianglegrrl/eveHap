@@ -463,7 +463,7 @@ If you use eveHap in your research, please cite:
 
 ```
 eveHap: Universal mtDNA Haplogroup Classifier
-https://github.com/your-org/evehap
+https://github.com/trianglegrrl/eveHap
 ```
 
 
