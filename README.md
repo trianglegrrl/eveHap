@@ -457,7 +457,11 @@ evehap/
 
 ## License
 
-MIT License
+PolyForm Noncommercial License 1.0.0
+
+This software is free for noncommercial use, including academic research, personal projects, and use by nonprofit organizations. See [LICENSE](LICENSE) for full terms.
+
+For commercial licensing inquiries, please contact the authors.
 
 ## Citation
 

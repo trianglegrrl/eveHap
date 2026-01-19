@@ -7,7 +7,7 @@ name = "evehap"
 version = "0.1.0"
 description = "Universal mtDNA Haplogroup Classifier"
 readme = "README.md"
-license = {text = "MIT"}
+license = {text = "PolyForm Noncommercial License 1.0.0"}
 requires-python = ">=3.8"
 authors = [
     {name = "eveHap Authors"}
@@ -16,7 +16,7 @@ keywords = ["mtdna", "haplogroup", "genetics", "phylogenetics", "ancient-dna"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
+    "License :: Other/Proprietary License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
@@ -49,9 +49,9 @@ validation = [
 evehap = "evehap.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/your-org/evehap"
-Documentation = "https://github.com/your-org/evehap#readme"
-Repository = "https://github.com/your-org/evehap"
+Homepage = "https://github.com/trianglegrrl/eveHap"
+Documentation = "https://github.com/trianglegrrl/eveHap#readme"
+Repository = "https://github.com/trianglegrrl/eveHap"
 
 [tool.setuptools.packages.find]
 where = ["."]
